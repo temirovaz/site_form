@@ -1,0 +1,43 @@
+.programs-table{
+  width: 100%;
+  margin:  0 0 30px 0 ;
+  &.-margin-small{
+    margin: 0 0 5px 0;
+  }
+}
+.programs-table__header{
+  font-size: 16px;
+  color: #222222;
+  background: #F3F3F3;
+  font-weight: bold;
+  padding: 5px 30px;
+
+}
+.programs-table__label{
+  color: #777777;
+  font-size: 12px;
+  display: flex;
+  line-height: 1.1;
+}
+.programs-table__name{
+  font-weight: bold;
+  line-height: 1.1;
+  width: 500px;
+}
+.programs-table__link{
+  color: #222222;
+  text-decoration: underline;
+  font-weight: bold;
+  &:hover{
+    text-decoration: underline;
+  }
+}
+.programs-table__td{
+  padding: 10px 5px
+}
+.programs-table-options{
+  width: 100px;
+  text-align: end;
+  display: flex;
+  justify-content: end;
+}

@@ -1,0 +1,24 @@
+.vue-simple-suggest{}
+.vue-simple-suggest.designed .input-wrapper input {
+  border: 1px solid #e8e8e8;
+  background: #fbfbfb;
+  .has-error & {
+    border-color: #b94a48;
+  }
+}
+.vue-simple-suggest.designed .suggestions{
+  padding: 20px 10px;
+}
+
+.vue-simple-suggest.designed .suggestions .suggest-item {
+  border-bottom: 1px solid #F2F2F2;
+  padding: 6px 10px;
+  margin: 0;
+  &:before{
+    content: none;
+  }
+}
+.vue-simple-suggest.designed .suggestions .suggest-item.hover {
+  background-color: #881812 !important;
+  color: #fff !important;
+}

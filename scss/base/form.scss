@@ -1,0 +1,27 @@
+.form-control-spinner{
+  position: relative;
+}
+.form-control-spinner__svg{
+  position: absolute;
+  top: 49px;
+  left: 12px;
+}
+.form-control-label{
+  position: relative;
+}
+.form-control-label__required:after{
+  content: '*';
+  position: absolute;
+  color: red;
+  right: -7px;
+}
+.form-control-error{
+  color: #b94a48;
+  line-height: 13px;
+  font-size: 13px;
+}
+
+.form-control:-webkit-autofill, .form-control:-webkit-autofill:hover, .form-control:-webkit-autofill:focus, .form-control:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #fbfbfb inset !important;
+  background: #fbfbfb;
+}

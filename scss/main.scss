@@ -1,0 +1,49 @@
+/* Архитектура в Sass
+    base/ — включает глобальные стили, такие как сброс стилей, типография, цвета, кнопки, списки и т.д.
+    components/ — содержит отдельные законченные смысловые блок с отдельным файлом .scss для каждого из них.
+    layout/ — содержит стили для основных компонентов макета, таких как хедер, футер, навигация и т.д.
+    pages/ — содержит стили, специфичные для шаблонов страниц, если это необходимо.
+    themes/ — стили для разных тем.
+    utils/ — глобальные миксины, функции, вспомогательные селекторы, константы и т.д.
+    vendors/ — стили, миксины и прочее от третьих сторон.
+    _shame.scss - хранятся постыдные CSS-решений, быстрые фиксы, хаки, которые должны быть реализованы позже как полагается.
+    _fonts.scss - используется если необходимо подключить шрифты в отдельный выходной файл для оптимизации загрузки.
+    main.scss — выходной файл, в котором объединяются все стили.
+*/
+//base
+@import "./base/normalize";
+
+//utils
+//@import "./utils/contantants";
+//@import "./utils/mixins";
+
+//vendors
+@import './vendors/toast';
+
+//components
+@import "./components/registration-course/dadata-suggestions";
+@import "./components/registration-course/programs-model";
+@import "./components/registration-course/programs-table";
+@import "./components/registration-course/listener-table";
+@import "./components/registration-course/wizard";
+@import "./components/registration-course/vue-simple-suggest";
+@import "./components/registration-course/note-line";
+@import "./components/registration-course/note-line";
+@import "./components/registration-course/summary-step";
+
+//listener
+@import "./components/registration-course/listeners/modal-select-exist-listener";
+
+//layout
+//@import "./layout/main";
+
+//base
+@import "base/button";
+@import "base/radio-button";
+@import "base/form";
+
+
+//pages
+//@import "./pages/index"
+
+@import "shame";

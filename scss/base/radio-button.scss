@@ -1,0 +1,29 @@
+.radio-button{
+  display: flex;
+}
+.radio-button-item{
+  background: #eee;
+
+  input{
+   display: none;
+  }
+  input[type=radio]:checked + label {
+    background: #881812;
+    color: white;
+  }
+  label{
+    padding: 7px 15px 8px;
+    font-size: 0.867em;
+    margin: 0;
+    border: 1px solid #999;
+    border-right: none;
+    cursor: pointer;
+  }
+  &:first-child label {
+    border-radius: 2px 0 0 2px;
+  }
+  &:last-child label {
+    border-radius: 0 2px 2px 0;
+    border-right: 1px solid #999;
+  }
+}

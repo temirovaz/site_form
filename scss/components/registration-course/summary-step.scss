@@ -1,0 +1,45 @@
+.summary-step{
+  max-width: 60%;
+}
+.summary-step__header{
+  font-size: 20px;
+  font-weight: bold;
+  margin: 10px 0;
+}
+.summary-step-info{
+  margin: 0 0 10px 0;
+}
+
+.summary-step-info__item{
+  display: flex;
+  border-bottom: 1px solid #881812;
+  border-top: 1px solid #881812;
+  padding: 5px 0;
+  margin: 0 0 -1px 0;
+}
+.summary-step-info__name{
+  color: #555555;
+  font-weight: 300;
+  margin: 0 5px 0 0;
+}
+.summary-step-info__value{
+  color: black;
+  font-weight: bold;
+}
+.summary-step-table__program-name{
+  background: #881812;
+  color: white;
+  padding: 5px 10px;
+}
+.summary-step-table{
+  width: 100%;
+  margin: 0 0 20px 0;
+}
+.summary-step-table-listener{
+  width: 100%;
+}
+.summary-step-table-listener tr td, .summary-step-table-listener tr th {
+  padding: 5px 10px;
+  background: #F9F9F9;
+  border: 1px solid #f2f2f2;
+}

@@ -1,0 +1,25 @@
+.listener-table{
+  width: 100%;
+  max-width: 100%;
+
+   tr{
+     td, th{
+      padding: 5px 10px;
+       background:  #F9F9F9;
+      border: 1px solid #f2f2f2;
+      &.-disable-padding{
+        padding: 8px;
+      }
+       &.-text-end{
+         text-align: end;
+       }
+      &.-disable-border{
+        border: 0;
+      }
+      &.-background-transparent{
+        background: transparent;
+      }
+    }
+  }
+}
+

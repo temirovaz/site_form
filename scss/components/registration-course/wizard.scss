@@ -1,0 +1,19 @@
+.wizard{}
+.wizard__body{
+  border-bottom: 1px solid #e8e8e8;
+  margin: 0 0 20px 0;
+  min-height: 250px;
+}
+.wizard-finish-step{
+  color: #881812;
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  height: 250px;
+  align-items: center;
+}
+.wizard-finish-step__header{
+  font-size: 35px;
+  font-weight: bold;
+  margin: 0 0 28px 0;
+}

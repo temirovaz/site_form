@@ -1,0 +1,26 @@
+
+.button-icon{
+    padding: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: transparent;
+    &.-remove{
+        background: #881812;
+    }
+}
+.button-text{
+    padding: 0;
+    background: transparent;
+    border: none;
+    &.-remove{
+        color: #881812;
+        &:hover{
+            color: #a31d16;
+            text-decoration: underline;
+        }
+    }
+
+}
+
+

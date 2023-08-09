@@ -1,0 +1,27 @@
+.passport-card{
+  border: 1px solid #e8e8e8;
+  padding: 20px;
+  position: relative;
+}
+.passport-card__row{
+  display: flex;
+  margin: 0 -10px 12px -10px;
+}
+.passport-card__item{
+  display: flex;
+  margin: 0 10px;
+  border-bottom: 1px solid #e8e8e8;
+  padding: 0 0 5px;
+}
+.passport-card-item__name{
+  font-weight: bold;
+  margin: 0 5px 0 0;
+}
+.passport-card-item__value{
+
+}
+.passport-card__button-edit{
+  cursor: pointer;
+  position: absolute;
+  right: 20px;
+}
