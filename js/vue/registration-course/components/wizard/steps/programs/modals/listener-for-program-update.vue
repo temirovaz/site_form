@@ -5,7 +5,7 @@
         <button type="button" data-dismiss="modal" aria-label="Close" class="close" @click="$modal.hide(modalName)"><span aria-hidden="true">×</span></button>
         <h4 class="modal-title">Редактирование слушателя</h4>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" v-if="listener">
         <template v-for="fields in mappingForm">
           <div class="row">
             <div v-for="field in fields">
@@ -21,9 +21,9 @@
                              :max="field.max"
                              :name="field.name"
                              :placeholder="field.placeholder"
-                             :disabled="listener.isLoadedDataFrom1C"
+                             :disabled="!listener.canBeEditedField(field.name) && listener.isLoadedDataFrom1C"
                              :label="field.label"
-                             :type="listener.isLoadedDataFrom1C ? 'text' : field.type"
+                             :type="!listener.canBeEditedField(field.name) && listener.isLoadedDataFrom1C ? 'text' : field.type"
                              :rules="listener.isLoadedDataFrom1C ? '' : field.rules"
                              v-model.trim="listener[field.name]"/>
                 </template>
@@ -55,7 +55,7 @@ export default {
     return {
       modalName: 'listener-for-program-update',
       program: {},
-      listener: {},
+      listener: null,
       isLoading: false,
       snils: null,
       mappingForm: [
@@ -98,7 +98,14 @@ export default {
             (response) => {
               if(response.data.status === "success" ){
                 if(response.data.data){
-                  const payload = {...response.data.data, ...{isLoadedDataFrom1C: true, phone: this.listener.phone, email: this.listener.email, snils: snils}};
+                  const payload = {...response.data.data, ...{
+                      isLoadedDataFrom1C: true,
+                      phone: this.listener.phone,
+                      email: this.listener.email,
+                      post: this.listener.post,
+                      snils: snils,
+                    }};
+
                   this.listener = ListenerModel.fromObject(payload);
                 }else{
                   this.clearProtectedReceivedFrom1C();
@@ -115,7 +122,6 @@ export default {
         if (!success) {
           return;
         }
-        console.log(this.listener);
         ProgramService.updateListenerBySnilsInAllPrograms(this.snils, this.listener);
         this.$modal.hide(this.modalName);
       });

@@ -17,7 +17,6 @@ export default class ProgramService {
                 }
                 return listener;
             });
-          console.log(program);
           this.updateProgram(program);
         })
 

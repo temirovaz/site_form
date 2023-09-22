@@ -9,12 +9,23 @@ export default class ListenerModel {
         this.post = '';
         this.snils = '';
         this.isLoadedDataFrom1C = false;
+        this.fieldsCanBeEdited = [
+            'post'
+        ];
 
         for (const property in data) {
             if(this.hasOwnProperty(property)){
                 this[property] = data[property]
             }
         }
+    }
+
+    getFieldsWhichCanBeEdited(){
+        return this.fieldsCanBeEdited;
+    }
+
+    canBeEditedField(field){
+        return this.getFieldsWhichCanBeEdited().includes(field);
     }
 
     toStore(){

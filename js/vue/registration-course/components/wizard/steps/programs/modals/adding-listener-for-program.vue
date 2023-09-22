@@ -21,10 +21,10 @@
                              :max="field.max"
                              :name="field.name"
                              :placeholder="field.placeholder"
-                             :disabled="fieldsIsDisable && field.autocomplete"
+                             :disabled="!field.canEditValue && isAutoloadFrom1C"
                              :label="field.label"
-                             :type="fieldsIsDisable ? '' : field.type"
-                             :rules="fieldsIsDisable ? '' : field.rules"
+                             :type="isAutoloadFrom1C ? 'text' : field.type"
+                             :rules="isAutoloadFrom1C && !field.canEditValue  ? '' : field.rules"
                              v-model.trim="field.value"/>
                 </template>
               </div>
@@ -56,17 +56,18 @@ export default {
       program: {},
       modalName: 'adding-listener-for-program',
       fieldsIsDisable: false,
+      isAutoloadFrom1C: false,
       isLoading: false,
       fields: [
-        {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6', value: '+7 (123)-12-31-231', autocomplete: false},
-        {name: 'email', label: 'Электронная почта', rules: 'email', class: 'col-md-6', value: '123@GMAIL.СOM', autocomplete: false},
-        {name: 'snils', label: 'СНИЛС', rules: 'required|digits:11|snils', class: 'col-md-12', value: '92703662611', autocomplete: false},
-        {name: 'surname', label: 'Фамилия', rules: 'required', class: 'col-md-4', value: 'g', autocomplete: true},
-        {name: 'name', label: 'Имя', rules: 'required', class: 'col-md-4', value: 'G', autocomplete: true},
-        {name: 'patronymic', label: 'Отчество', class: 'col-md-4', value: 'G', autocomplete: true},
+        {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6', value: '+7 (123)-12-31-231', autocomplete: false, canEditValue: false},
+        {name: 'email', label: 'Электронная почта', rules: 'email', class: 'col-md-6', value: '123@GMAIL.СOM', autocomplete: false, canEditValue: false},
+        {name: 'snils', label: 'СНИЛС', rules: 'required|digits:11|snils', class: 'col-md-12', value: '92703662611', autocomplete: false, canEditValue: false},
+        {name: 'surname', label: 'Фамилия', rules: 'required', class: 'col-md-4', value: 'g', autocomplete: true, canEditValue: false},
+        {name: 'name', label: 'Имя', rules: 'required', class: 'col-md-4', value: 'G', autocomplete: true, canEditValue: false},
+        {name: 'patronymic', label: 'Отчество', class: 'col-md-4', value: 'G', autocomplete: true, canEditValue: false},
         {name: 'passport_date_of_birth', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата рождения',
-          rules: 'required',class: 'col-md-12', value: '12.12.2000', autocomplete: true},
-        {name: 'post', label: 'Должность абитуриента', rules: 'required',class: 'col-md-12', value: '23', autocomplete: true},
+          rules: 'required',class: 'col-md-12', value: '12.12.2000', autocomplete: true, canEditValue: false},
+        {name: 'post', label: 'Должность абитуриента', rules: 'required',class: 'col-md-12', value: '23', autocomplete: true, canEditValue: true},
 
       ],
     }
@@ -102,19 +103,23 @@ export default {
               if(response.data.status === "success" ){
                 if(response.data.data){ //DRY
                   this.fieldsIsDisable = true;
+                  this.isAutoloadFrom1C = true;
                   this.fields = this.fields.map((field) => {
-                    if(field.autocomplete)
-                       field.value = response.data.data[field.name];
+                    if(field.autocomplete){
+                      field.value = response.data.data[field.name];
+                    }
 
                     return field;
                   });
                 }else{
+                  this.isAutoloadFrom1C = false;
                   this.fieldsIsDisable = false;
                 }
               }
             }
         ).catch( (error) => {
           this.fieldsIsDisable = false;
+          this.isAutoloadFrom1C = false;
           this.clearFormFields();
         }).finally( () => {
           this.isLoading = false;

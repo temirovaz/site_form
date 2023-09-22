@@ -110,11 +110,9 @@ export default {
     }
   },
   created() {
-    console.log('sdsd')
      this.customer = CustomerModel.fromStore(this.$store.state.form);
   },
   activated() {
-    console.log('activated')
      this.customer = CustomerModel.fromStore(this.$store.state.form);
   },
 }
