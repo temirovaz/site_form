@@ -1,10 +1,9 @@
 <template>
   <div class="wizard">
-    <div ref="wizard-body" class="wizard__body">
+    <div ref="wizard-body" class="wizard__body" >
       <div  class="wizard__body__step" v-if="!isFinish">
         <keep-alive>
-          <component :is="component" @can-continue="proceedNext" @can-finish="proceedFinish"
-                     :clickedFinish="clickedFinish" :clickedNext="nextButton"></component>
+          <component :is="component" @can-continue="proceedNext" @can-finish="proceedFinish" :clickedFinish="clickedFinish" :clickedNext="nextButton"></component>
         </keep-alive>
       </div>
       <div class="wizard-finish-step" v-if="isFinish">
@@ -20,7 +19,6 @@
     </div>
   </div>
 </template>
-
 <script>
 import stepContacts from './wizard/steps/contacts';
 import stepPayment from './wizard/steps/payment-form';
@@ -72,6 +70,8 @@ export default {
       if(event.status === true){
         this.currentStep++;
       }
+      const wizardBody = this.$refs["wizard-body"];
+      wizardBody.scrollIntoView({ behavior: 'smooth' });
       this.nextButton = false;
     },
 

@@ -1,5 +1,8 @@
 .summary-step{
   max-width: 60%;
+  @include media(medium down){
+    max-width: 100%;
+  }
 }
 .summary-step__header{
   font-size: 20px;

@@ -1,6 +1,6 @@
 <template>
   <keep-alive>
-    <modal name="selecting-program-for-listener" class="programs-model"  @before-open="beforeOpen"  width="50%" height="auto" @before-close="beforeCLose">
+    <modal name="selecting-program-for-listener" class="modal-selecting-program" :adaptive="true" height="auto"  @before-open="beforeOpen"  @before-close="beforeCLose">
     <div class="modal-header">
       <button type="button" data-dismiss="modal" aria-label="Close" class="close" @click="$modal.hide('selecting-program-for-listener')">
         <span aria-hidden="true">×</span>
@@ -75,7 +75,7 @@ export default {
       return programModal.isSelectProgram();
     },
     beforeOpen: function () {
-      window.jivo_api.open();
+    //  window.jivo_api.open();
     },
     beforeCLose: function (){
       this.programs = [];

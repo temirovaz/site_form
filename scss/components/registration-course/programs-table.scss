@@ -33,7 +33,10 @@
   }
 }
 .programs-table__td{
-  padding: 10px 5px
+  padding: 10px 5px;
+  @include media(medium down){
+    text-wrap: nowrap;
+  }
 }
 .programs-table-options{
   width: 100px;

@@ -1,8 +1,15 @@
 .radio-button{
   display: flex;
+  @include media(medium down){
+    flex-wrap: wrap;
+  }
 }
 .radio-button-item{
   background: #eee;
+  @include media(medium down){
+    flex: 1 1 auto;
+    margin: 0 0 5px 0;
+  }
 
   input{
    display: none;
@@ -18,6 +25,11 @@
     border: 1px solid #999;
     border-right: none;
     cursor: pointer;
+    @include media(medium down){
+      display: block;
+      width: 100%;
+      border: none;
+    }
   }
   &:first-child label {
     border-radius: 2px 0 0 2px;
@@ -25,5 +37,8 @@
   &:last-child label {
     border-radius: 0 2px 2px 0;
     border-right: 1px solid #999;
+    @include media(medium down){
+      border: none;
+    }
   }
 }

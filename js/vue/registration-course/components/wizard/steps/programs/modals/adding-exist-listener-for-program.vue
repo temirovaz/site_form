@@ -1,5 +1,5 @@
 <template>
-  <modal :name="modalName" class="programs-model" @before-open="beforeOpen"  width="50%" height="auto">
+  <modal :name="modalName" class="modal-adding-exist-listener" :adaptive="true" height="auto" @before-open="beforeOpen" >
     <div class="modal-header">
       <button type="button" data-dismiss="modal" aria-label="Close" class="close" @click="$modal.hide(modalName)"><span aria-hidden="true">×</span></button>
       <h4 class="modal-title">Добавление слушателя</h4>

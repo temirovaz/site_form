@@ -1,5 +1,5 @@
 <template>
-  <modal :name="modalName" class="programs-model" @before-open="beforeOpen"  width="50%" height="auto">
+  <modal :name="modalName" class="modal-adding-listener" :adaptive="true" height="auto" @before-open="beforeOpen">
     <ValidationObserver ref="form">
       <div class="modal-header">
         <button type="button" data-dismiss="modal" aria-label="Close" class="close" @click="$modal.hide(modalName)"><span aria-hidden="true">×</span></button>
@@ -31,6 +31,7 @@
             </div>
           </div>
         </template>
+
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default btn-sm" @click="addListenerInProgram">Добавить слушателя</button>
@@ -70,6 +71,7 @@ export default {
         {name: 'post', label: 'Должность абитуриента', rules: 'required',class: 'col-md-12', value: '23', autocomplete: true, canEditValue: true},
 
       ],
+
     }
   },
   computed: {

@@ -15,9 +15,10 @@
 
 //utils
 //@import "./utils/contantants";
-//@import "./utils/mixins";
+@import "./utils/mixins";
 
 //vendors
+@import './vendors/toast';
 @import './vendors/toast';
 
 //components
@@ -35,7 +36,7 @@
 @import "./components/registration-course/listeners/modal-select-exist-listener";
 
 //layout
-//@import "./layout/main";
+@import "./layout/main";
 
 //base
 @import "base/button";
