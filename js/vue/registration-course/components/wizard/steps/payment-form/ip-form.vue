@@ -39,6 +39,9 @@ export default {
         {name: 'basis', label: 'Основание', value: '', class: 'col-md-12'},
         {name: 'management_name', label: 'Руководитель', value: '', class: 'col-md-8', rules: 'required'},
         {name: 'management_post', label: 'Должность руководителя', value: '', class: 'col-md-4', rules: 'required'},
+        {name: 'address_value', label: 'Юридический адрес', value: '', class: 'col-md-12', rules: 'required'},
+        {name: 'actual_address', label: 'Фактический адрес', value: '', class: 'col-md-12', rules: 'required'},
+        {name: 'postal_code', label: 'Почтовый индекс', value: '', class: 'col-md-4', rules: 'required'},
       ],
     }
   },
@@ -50,11 +53,26 @@ export default {
         }
         return field;
       });
+      
+      // Автоматически заполняем фактический адрес и почтовый индекс данными из юридического адреса
+      if (suggestion.fields.address_value) {
+        const actualAddressField = this.fields.find(field => field.name === 'actual_address');
+        if (actualAddressField) {
+          actualAddressField.value = suggestion.fields.address_value;
+        }
+      }
+      
+      if (suggestion.fields.postal_code) {
+        const postalCodeField = this.fields.find(field => field.name === 'postal_code');
+        if (postalCodeField) {
+          postalCodeField.value = suggestion.fields.postal_code;
+        }
+      }
     },
   },
   computed: {
     rows() {
-      return [ [0, 1], [2], [3], [4, 5] ].map(row => row.map(i => this.fields[i]))
+      return [ [0, 1], [2], [3], [4, 5], [6], [7], [8] ].map(row => row.map(i => this.fields[i]))
     },
   },
   watch: {
