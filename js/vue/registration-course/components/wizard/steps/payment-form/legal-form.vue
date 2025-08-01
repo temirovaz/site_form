@@ -44,6 +44,7 @@ export default {
         {name: 'basis', label: 'Основание', value: '', class: 'col-md-12'},
         {name: 'management_name', label: 'Руководитель', value: '', class: 'col-md-8', rules: 'required'},
         {name: 'management_post', label: 'Должность руководителя', value: '', class: 'col-md-4', rules: 'required'},
+        {name: 'legal_address', label: 'Юридический адрес', value: '', class: 'col-md-12', rules: 'required'}, // Новое поле
       ],
     }
   },
