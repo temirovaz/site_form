@@ -56,6 +56,9 @@ export default {
                   name_full_with_opf: suggestion.data.name.full_with_opf || '',
                   management_name: suggestion.data.management?.name || suggestion.data.name.full || '',
                   management_post: suggestion.data.management?.post || (this.mode === 'INDIVIDUAL' ? 'Директор' : ''),
+                  // Добавляем данные об адресе и индексе
+                  address_value: suggestion.data.address?.value || '',
+                  postal_code: suggestion.data.address?.data?.postal_code || '',
               }})
             })
           }
