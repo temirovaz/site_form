@@ -5,17 +5,19 @@
       <form>
         <FormField label="Телефон" name="phone" rules="required" v-model="phone"  placeholder="+7(___)___-__-__" />
         <SuggestionEmail label="Эл. почта" rules="required|email" v-model="email"></SuggestionEmail>
-        <div class="checkbox-container">
-          <input type="checkbox" id="privacy-policy" v-model="privacyPolicyAccepted" checked>
-          <label for="privacy-policy">
-            Я согласен с <a href="https://likey.su/include/licenses_detail.php" target="_blank">политикой обработки персональных данных</a>
-          </label>
-        </div>
-        <div v-if="showPrivacyPolicyError" class="error-message">
-          Необходимо принять политику
-        </div>
       </form>
     </ValidationObserver>
+    
+    <!-- Чек-бокс политики обработки персональных данных -->
+    <div class="checkbox-container">
+      <input type="checkbox" id="privacy-policy" v-model="privacyPolicyAccepted">
+      <label for="privacy-policy">
+        Я согласен с <a href="https://likey.su/include/licenses_detail.php" target="_blank">политикой обработки персональных данных</a>
+      </label>
+    </div>
+    <div v-if="showPrivacyPolicyError" class="error-message">
+      Необходимо принять политику
+    </div>
   </div>
 </template>
 
@@ -31,7 +33,7 @@ export default {
     return {
       phone: '',
       email: '',
-      privacyPolicyAccepted: true,
+      privacyPolicyAccepted: false,
       showPrivacyPolicyError: false,
     }
   },

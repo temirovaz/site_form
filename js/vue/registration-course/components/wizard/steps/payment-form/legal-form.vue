@@ -20,6 +20,17 @@
           </div>
         </div>
       </template>
+      
+      <!-- Чек-бокс согласия на обработку данных слушателей -->
+      <div class="checkbox-container">
+        <input type="checkbox" id="listeners-consent-legal" v-model="listenersConsentAccepted">
+        <label for="listeners-consent-legal">
+          Согласия на обработку субъектов персональных данных (слушателей) получены
+        </label>
+      </div>
+      <div v-if="showListenersConsentError" class="error-message">
+        Необходимо подтвердить получение согласий
+      </div>
     </ValidationObserver>
   </div>
 </template>
@@ -36,6 +47,8 @@ export default {
   data: function () {
     return {
       suggestions: [],
+      listenersConsentAccepted: false,
+      showListenersConsentError: false,
       fields: [
         {name: 'inn', label: 'ИНН', value: '', class: 'col-md-8', rules: 'required|inn'},
         {name: 'kpp', label: 'КПП', value: '', class: 'col-md-4', rules: 'required'},
@@ -44,13 +57,9 @@ export default {
         {name: 'basis', label: 'Основание', value: '', class: 'col-md-12'},
         {name: 'management_name', label: 'Руководитель', value: '', class: 'col-md-8', rules: 'required'},
         {name: 'management_post', label: 'Должность руководителя', value: '', class: 'col-md-4', rules: 'required'},
-<<<<<<< HEAD
-        {name: 'legal_address', label: 'Юридический адрес', value: '', class: 'col-md-12', rules: 'required'}, // Новое поле
-=======
         {name: 'address_value', label: 'Юридический адрес', value: '', class: 'col-md-12', rules: 'required'},
         {name: 'actual_address', label: 'Фактический адрес', value: '', class: 'col-md-12', rules: 'required'},
         {name: 'postal_code', label: 'Почтовый индекс', value: '', class: 'col-md-4', rules: 'required'},
->>>>>>> f686e8e1e546ec72fbf93c8ee36384c5abdda4eb
       ],
     }
   },
@@ -91,14 +100,21 @@ export default {
   watch: {
     clickedNext: function(status) {
       if(status === true){
+        this.showListenersConsentError = false;
         this.$refs.form.validate().then(success => {
-          let payload = {}
-          this.fields.forEach( (field) => {
-            payload[field.name] = field.value;
-          });
-          this.$store.commit('saveDataFormForStep', {payment : {type: 'legal', ... payload}})
-          this.$emit('can-continue', {status: success});
-
+          if (success && this.listenersConsentAccepted) {
+            let payload = {}
+            this.fields.forEach( (field) => {
+              payload[field.name] = field.value;
+            });
+            this.$store.commit('saveDataFormForStep', {payment : {type: 'legal', ... payload}})
+            this.$emit('can-continue', {status: true});
+          } else if (!this.listenersConsentAccepted) {
+            this.showListenersConsentError = true;
+            this.$emit('can-continue', {status: false});
+          } else {
+            this.$emit('can-continue', {status: false});
+          }
         });
       }
     },
@@ -112,5 +128,14 @@ export default {
 .form-control[disabled]{
   background-color: #eee;
   opacity: 1;
+}
+
+.checkbox-container {
+  margin-top: 15px;
+}
+
+.error-message {
+  color: red;
+  margin-top: 5px;
 }
 </style>
