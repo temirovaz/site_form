@@ -18,6 +18,17 @@
           </div>
         </div>
       </template>
+      
+      <!-- Чек-бокс согласия на обработку данных слушателей -->
+      <div class="checkbox-container">
+        <input type="checkbox" id="listeners-consent" v-model="listenersConsentAccepted">
+        <label for="listeners-consent">
+          Согласия на обработку субъектов персональных данных (слушателей) получены
+        </label>
+      </div>
+      <div v-if="showListenersConsentError" class="error-message">
+        Необходимо подтвердить получение согласий
+      </div>
     </ValidationObserver>
   </div>
 </template>
@@ -32,6 +43,8 @@ export default {
     return {
       searchInDaData: '',
       suggestions: [],
+      listenersConsentAccepted: false,
+      showListenersConsentError: false,
       fields: [
         {name: 'inn', label: 'ИНН', value: '', class: 'col-md-12', rules: 'required|inn'},
         {name: 'name_short', label: 'Сокращенное наименование', value: '', class: 'col-md-12', rules: 'required'},
@@ -78,13 +91,21 @@ export default {
   watch: {
     clickedNext: function(status) {
       if(status === true){
+        this.showListenersConsentError = false;
         this.$refs.form.validate().then(success => {
-          let payload = {}
-          this.fields.forEach( (field) => {
-            payload[field.name] = field.value;
-          });
-          this.$store.commit('saveDataFormForStep', {payment : {type: 'ip', ... payload}})
-          this.$emit('can-continue', {status: success});
+          if (success && this.listenersConsentAccepted) {
+            let payload = {}
+            this.fields.forEach( (field) => {
+              payload[field.name] = field.value;
+            });
+            this.$store.commit('saveDataFormForStep', {payment : {type: 'ip', ... payload}})
+            this.$emit('can-continue', {status: true});
+          } else if (!this.listenersConsentAccepted) {
+            this.showListenersConsentError = true;
+            this.$emit('can-continue', {status: false});
+          } else {
+            this.$emit('can-continue', {status: false});
+          }
         });
       }
     },
@@ -98,5 +119,14 @@ export default {
 .form-control[disabled]{
   background-color: #eee;
   opacity: 1;
+}
+
+.checkbox-container {
+  margin-top: 15px;
+}
+
+.error-message {
+  color: red;
+  margin-top: 5px;
 }
 </style>
