@@ -57,13 +57,9 @@ export default {
         {name: 'basis', label: 'Основание', value: '', class: 'col-md-12'},
         {name: 'management_name', label: 'Руководитель', value: '', class: 'col-md-8', rules: 'required'},
         {name: 'management_post', label: 'Должность руководителя', value: '', class: 'col-md-4', rules: 'required'},
-<<<<<<< HEAD
-        {name: 'legal_address', label: 'Юридический адрес', value: '', class: 'col-md-12', rules: 'required'}, // Новое поле
-=======
         {name: 'address_value', label: 'Юридический адрес', value: '', class: 'col-md-12', rules: 'required'},
         {name: 'actual_address', label: 'Фактический адрес', value: '', class: 'col-md-12', rules: 'required'},
         {name: 'postal_code', label: 'Почтовый индекс', value: '', class: 'col-md-4', rules: 'required'},
->>>>>>> f686e8e1e546ec72fbf93c8ee36384c5abdda4eb
       ],
     }
   },
