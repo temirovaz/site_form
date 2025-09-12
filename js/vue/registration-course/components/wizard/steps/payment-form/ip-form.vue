@@ -21,8 +21,8 @@
       
       <!-- Чек-бокс согласия на обработку данных слушателей -->
       <div class="checkbox-container">
-        <input type="checkbox" id="listeners-consent" v-model="listenersConsentAccepted">
-        <label for="listeners-consent">
+        <input type="checkbox" id="listeners-consent-ip" v-model="listenersConsentAccepted">
+        <label for="listeners-consent-ip">
           Согласия на обработку субъектов персональных данных (слушателей) получены
         </label>
       </div>
