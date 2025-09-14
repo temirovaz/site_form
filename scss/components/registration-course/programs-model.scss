@@ -2,90 +2,24 @@
   max-height: 600px;
   overflow-y: auto;
   overflow-x: hidden;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
 }
-
 .modal-programs-list__item{
   display: flex;
   justify-content: space-between;
   border-top: 1px solid #F2F2F2;
-  padding: 15px 20px;
-  color: #333;
+  padding: 5px 5px 5px 0;
+  color: black;
   align-items: center;
-  transition: all 0.2s ease;
-  
-  &:first-child {
-    border-top: none;
-  }
-  
-  &:hover {
-    background: #f8f9fa;
-  }
-  
-  &:last-child {
-    border-bottom: none;
-  }
 }
 
 .modal-programs-list__left{
-  padding: 0 15px 0 0;
+  padding: 0 10px 0 0;
   font-size: 15px;
-  line-height: 1.4;
-  color: #333;
-  flex: 1;
+  line-height: 16px;
+  color: #881812;
 }
-
 .modal-programs-list__prefix{
-  color: #666;
-  font-size: 12px;
+  color: #555555;
+  font-size: 14px;
   white-space: nowrap;
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.modal-programs-list__right {
-  flex-shrink: 0;
-}
-
-// Улучшенные модальные окна
-.modal-selecting-program,
-.modal-adding-listener {
-  .modal-header {
-    background: linear-gradient(135deg, #881812, #a31d16);
-    color: white;
-    border-radius: 8px 8px 0 0;
-    padding: 20px;
-    
-    .modal-title {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-    }
-    
-    .close {
-      color: white;
-      opacity: 0.8;
-      
-      &:hover {
-        opacity: 1;
-      }
-    }
-  }
-  
-  .modal-body {
-    padding: 30px;
-  }
-  
-  .modal-footer {
-    padding: 20px 30px;
-    background: #f8f9fa;
-    border-radius: 0 0 8px 8px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-  }
 }
