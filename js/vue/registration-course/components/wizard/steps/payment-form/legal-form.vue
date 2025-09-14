@@ -25,7 +25,7 @@
       <div class="checkbox-container">
         <input type="checkbox" id="listeners-consent-legal" v-model="listenersConsentAccepted">
         <label for="listeners-consent-legal">
-          Согласия на обработку субъектов персональных данных (слушателей) получены
+          Согласия на обработку персональных данных субъектов персональных данных (слушателей) получены
         </label>
       </div>
       <div v-if="showListenersConsentError" class="error-message">
