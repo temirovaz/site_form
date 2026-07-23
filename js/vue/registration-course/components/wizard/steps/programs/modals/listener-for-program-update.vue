@@ -75,6 +75,21 @@ export default {
           {name: 'date_of_birth', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата рождения', rules: 'required', class: 'col-md-12'},
         ],
         [
+          {name: 'passport_series', label: 'Серия', rules: 'required|digits:4', class: 'col-md-3'},
+          {name: 'passport_number', label: 'Номер', rules: 'required|digits:6', class: 'col-md-3'},
+          {name: 'passport_date_of_issue', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата выдачи', rules: 'required', class: 'col-md-3'},
+          {name: 'passport_division', label: 'Код подразделения', rules: 'required', class: 'col-md-3'},
+        ],
+        [
+          {name: 'passport_issued', label: 'Выдан', rules: 'required', class: 'col-md-12'},
+        ],
+        [
+          {name: 'passport_place_of_birth', label: 'Место рождения', rules: 'required', class: 'col-md-12'},
+        ],
+        [
+          {name: 'registration', label: 'Регистрация', rules: 'required', class: 'col-md-12'},
+        ],
+        [
           {name: 'post', label: 'Должность абитуриента', rules: 'required',class: 'col-md-12', autocomplete: true},
         ]
       ],

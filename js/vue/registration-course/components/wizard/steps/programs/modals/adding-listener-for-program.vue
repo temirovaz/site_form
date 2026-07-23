@@ -68,6 +68,13 @@ export default {
         {name: 'patronymic', label: 'Отчество', class: 'col-md-4', value: 'G', autocomplete: true, canEditValue: false},
         {name: 'passport_date_of_birth', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата рождения',
           rules: 'required',class: 'col-md-12', value: '12.12.2000', autocomplete: true, canEditValue: false},
+        {name: 'passport_series', label: 'Серия', rules: 'required|digits:4', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false},
+        {name: 'passport_number', label: 'Номер', rules: 'required|digits:6', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false},
+        {name: 'passport_date_of_issue', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата выдачи', rules: 'required', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false},
+        {name: 'passport_division', label: 'Код подразделения', rules: 'required', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false},
+        {name: 'passport_issued', label: 'Выдан', rules: 'required', class: 'col-md-12', value: '', autocomplete: true, canEditValue: false},
+        {name: 'passport_place_of_birth', label: 'Место рождения', rules: 'required', class: 'col-md-12', value: '', autocomplete: true, canEditValue: false},
+        {name: 'registration', label: 'Регистрация', rules: 'required', class: 'col-md-12', value: '', autocomplete: true, canEditValue: false},
         {name: 'post', label: 'Должность абитуриента', rules: 'required',class: 'col-md-12', value: '23', autocomplete: true, canEditValue: true},
 
       ],
@@ -77,7 +84,7 @@ export default {
   computed: {
     rows() {
       return [
-        [0, 1], [2], [3, 4, 5], [6], [7]
+        [0, 1], [2], [3, 4, 5], [6], [7, 8, 9, 10], [11], [12], [13], [14]
       ].map(row => row.map(i => this.fields[i]))
     },
   },
