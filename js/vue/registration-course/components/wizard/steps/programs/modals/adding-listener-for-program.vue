@@ -16,6 +16,12 @@
                 <template v-else-if="field.name === 'email'">
                   <SuggestionEmail  label="Эл. почта" rules="required|email" v-model.trim="field.value"></SuggestionEmail>
                 </template>
+                <template v-else-if="field.name === 'passport_division'">
+                  <DaDataSuggestion mode="FMS_UNIT" :label="field.label"
+                             :disabled="!field.canEditValue && isAutoloadFrom1C"
+                             :rules="isAutoloadFrom1C && !field.canEditValue ? '' : field.rules"
+                             v-model.trim="field.value" @dadata-select-suggestion="onDivisionSelected"/>
+                </template>
                 <template v-else>
                   <FormField :isLoading="field.autocomplete && isLoading"
                              :max="field.max"
@@ -141,6 +147,13 @@ export default {
         field.value = field.name === 'snils' ? field.value : '';
         return field;
       });
+    },
+
+    onDivisionSelected(suggestion){
+      const issuedField = this.fields.find(f => f.name === 'passport_issued');
+      if(issuedField && suggestion.fields.passport_issued){
+        issuedField.value = suggestion.fields.passport_issued;
+      }
     },
 
     addListenerInProgram: function (){
