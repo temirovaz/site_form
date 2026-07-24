@@ -1,10 +1,8 @@
-@include media(medium down){
-  .modal-update-listener .modal-body,
-  .modal-adding-listener .modal-body,
-  .modal-selecting-program .modal-body,
-  .modal-adding-exist-listener .modal-body{
-    height: calc(var(--app-height) - 136px);
-    overflow: scroll;
-  }
+.modal-update-listener .modal-body,
+.modal-adding-listener .modal-body,
+.modal-selecting-program .modal-body,
+.modal-adding-exist-listener .modal-body{
+  max-height: calc(100vh - 136px);
+  overflow-y: auto;
 }
 

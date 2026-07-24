@@ -12,6 +12,9 @@
                     <template v-if="field.name === 'snils'">
                       <FormField :name="field.name" :label="field.label" ref="snils" :rules="field.rules" v-model="field.value" @input="searchDataOnUserBySNILS"/>
                     </template>
+                    <template v-else-if="field.name === 'passport_division'">
+                      <DaDataSuggestion mode="FMS_UNIT" :label="field.label" :rules="fieldsIsDisable ? '' : field.rules" :disabled="fieldsIsDisable" v-model.trim="field.value" @dadata-select-suggestion="onDivisionSelected"/>
+                    </template>
                     <template v-else>
                         <FormField :isLoading="isLoading"
                                  :max="field.max"
@@ -37,9 +40,10 @@
 
 <script>
 import FormInput from "../../../form/form-input";
+import DaDataSuggestion from "../../../dadata-suggestion";
 export default {
   name: 'wizard-physical-form',
-  components: {FormInput},
+  components: {FormInput, DaDataSuggestion},
   props: ['clickedNext'],
   data: function () {
     return {
@@ -54,7 +58,7 @@ export default {
         {name: 'passport_number', label: 'Номер', rules: 'required|digits:6', class: 'col-md-3'},
         {name: 'passport_date_of_issue', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата выдачи', rules: 'required', class: 'col-md-3'},
         {name: 'passport_division', label: 'Код подразделения', rules: 'required', class: 'col-md-3'},
-        {name: 'passport_issued', label: 'Выдан', rules: 'required', class: 'col-md-12'},
+        {name: 'passport_issued', label: 'Выдан', rules: 'required', class: 'col-md-12', value: ''},
         {name: 'passport_place_of_birth', label: 'Место рождения', rules: 'required', class: 'col-md-12'},
         {name: 'registration', label: 'Регистрация', rules: 'required', class: 'col-md-12'},
         {name: 'address', label: 'Почтовый адрес', rules: 'required', class: 'col-md-12'},
@@ -99,6 +103,13 @@ export default {
         field.value = field.name === 'snils' ? field.value : '';
           return field;
       });
+    },
+
+    onDivisionSelected(suggestion){
+      const issuedField = this.fields.find(f => f.name === 'passport_issued');
+      if(issuedField && suggestion.fields.passport_issued){
+        issuedField.value = suggestion.fields.passport_issued;
+      }
     }
   },
   computed: {
