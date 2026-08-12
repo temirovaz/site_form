@@ -18,8 +18,8 @@
                 </template>
                 <template v-else-if="field.name === 'passport_division'">
                   <DaDataSuggestion mode="FMS_UNIT" :label="field.label"
-                             :disabled="listener.isLoadedDataFrom1C"
-                             :rules="listener.isLoadedDataFrom1C ? '' : field.rules"
+                             :disabled="listener.isLoadedDataFrom1C && !!listener[field.name]"
+                             :rules="listener.isLoadedDataFrom1C && !!listener[field.name] ? '' : field.rules"
                              v-model.trim="listener[field.name]" @dadata-select-suggestion="onDivisionSelected"/>
                 </template>
                 <template v-else>
@@ -27,10 +27,10 @@
                              :max="field.max"
                              :name="field.name"
                              :placeholder="field.placeholder"
-                             :disabled="listener.isLoadedDataFrom1C"
+                             :disabled="listener.isLoadedDataFrom1C && !!listener[field.name]"
                              :label="field.label"
-                             :type="listener.isLoadedDataFrom1C ? 'text' : field.type"
-                             :rules="listener.isLoadedDataFrom1C ? '' : field.rules"
+                             :type="listener.isLoadedDataFrom1C && !!listener[field.name] ? 'text' : field.type"
+                             :rules="listener.isLoadedDataFrom1C && !!listener[field.name] ? '' : field.rules"
                              v-model.trim="listener[field.name]"/>
                 </template>
               </div>

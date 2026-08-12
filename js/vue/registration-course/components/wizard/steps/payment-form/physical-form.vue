@@ -13,16 +13,16 @@
                       <FormField :name="field.name" :label="field.label" ref="snils" :rules="field.rules" v-model="field.value" @input="searchDataOnUserBySNILS"/>
                     </template>
                     <template v-else-if="field.name === 'passport_division'">
-                      <DaDataSuggestion mode="FMS_UNIT" :label="field.label" :rules="fieldsIsDisable ? '' : field.rules" :disabled="fieldsIsDisable" v-model.trim="field.value" @dadata-select-suggestion="onDivisionSelected"/>
+                      <DaDataSuggestion mode="FMS_UNIT" :label="field.label" :rules="fieldsIsDisable && !!field.value ? '' : field.rules" :disabled="fieldsIsDisable && !!field.value" v-model.trim="field.value" @dadata-select-suggestion="onDivisionSelected"/>
                     </template>
                     <template v-else>
                         <FormField :isLoading="isLoading"
                                  :max="field.max"
-                                 :type="fieldsIsDisable ? 'text' : field.type"
+                                 :type="fieldsIsDisable && !!field.value ? 'text' : field.type"
                                  :name="field.label"
-                                 :disabled="fieldsIsDisable"
+                                 :disabled="fieldsIsDisable && !!field.value"
                                  :label="field.label"
-                                 :rules="fieldsIsDisable ? '' : field.rules"
+                                 :rules="fieldsIsDisable && !!field.value ? '' : field.rules"
                                  v-model.trim="field.value"/>
                     </template>
                   </div>
@@ -85,7 +85,7 @@ export default {
                   if(response.data.data){ //DRY
                     this.fieldsIsDisable = true;
                     this.fields = this.fields.map((field) => {
-                      field.value = field.value || response.data.data[field.name];
+                      field.value = field.value || response.data.data[field.name] || '';
                         return field;
                     });
                   }else{
