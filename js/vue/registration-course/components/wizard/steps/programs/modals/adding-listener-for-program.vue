@@ -18,8 +18,8 @@
                 </template>
                 <template v-else-if="field.name === 'passport_division'">
                   <DaDataSuggestion mode="FMS_UNIT" :label="field.label"
-                             :disabled="!field.canEditValue && isAutoloadFrom1C"
-                             :rules="isAutoloadFrom1C && !field.canEditValue ? '' : field.rules"
+                             :disabled="!field.canEditValue && isAutoloadFrom1C && !!field.value"
+                             :rules="isAutoloadFrom1C && !field.canEditValue && !!field.value ? '' : field.rules"
                              v-model.trim="field.value" @dadata-select-suggestion="onDivisionSelected"/>
                 </template>
                 <template v-else>
@@ -27,10 +27,10 @@
                              :max="field.max"
                              :name="field.name"
                              :placeholder="field.placeholder"
-                             :disabled="!field.canEditValue && isAutoloadFrom1C"
+                             :disabled="!field.canEditValue && isAutoloadFrom1C && !!field.value"
                              :label="field.label"
-                             :type="isAutoloadFrom1C ? 'text' : field.type"
-                             :rules="isAutoloadFrom1C && !field.canEditValue  ? '' : field.rules"
+                             :type="isAutoloadFrom1C && !!field.value ? 'text' : field.type"
+                             :rules="isAutoloadFrom1C && !field.canEditValue && !!field.value ? '' : field.rules"
                              v-model.trim="field.value"/>
                 </template>
               </div>
@@ -121,7 +121,7 @@ export default {
                   this.isAutoloadFrom1C = true;
                   this.fields = this.fields.map((field) => {
                     if(field.autocomplete){
-                      field.value = response.data.data[field.name];
+                      field.value = response.data.data[field.name] || '';
                     }
 
                     return field;
@@ -164,7 +164,12 @@ export default {
         }
         let payload = {};
         this.fields.forEach((field) => {
-          payload[field.name] = field.type === 'date' && !field.value.includes('*') ? new Date(field.value).toISOString() : field.value;
+          if(field.type === 'date' && field.value && !field.value.includes('*')){
+            const parsedDate = new Date(field.value);
+            payload[field.name] = isNaN(parsedDate.getTime()) ? '' : parsedDate.toISOString();
+          }else{
+            payload[field.name] = field.value;
+          }
         });
 
         const model = ListenerModel.fromObject({...payload, ...{fieldsIsDisable: this.fieldsIsDisable}});
