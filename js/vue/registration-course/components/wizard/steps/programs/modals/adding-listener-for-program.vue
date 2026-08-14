@@ -18,8 +18,8 @@
                 </template>
                 <template v-else-if="field.name === 'passport_division'">
                   <DaDataSuggestion mode="FMS_UNIT" :label="field.label"
-                             :disabled="!field.canEditValue && isAutoloadFrom1C && !!field.value"
-                             :rules="isAutoloadFrom1C && !field.canEditValue && !!field.value ? '' : field.rules"
+                             :disabled="!field.canEditValue && !!field.filledFrom1C"
+                             :rules="!field.canEditValue && field.filledFrom1C ? '' : field.rules"
                              v-model.trim="field.value" @dadata-select-suggestion="onDivisionSelected"/>
                 </template>
                 <template v-else>
@@ -27,10 +27,10 @@
                              :max="field.max"
                              :name="field.name"
                              :placeholder="field.placeholder"
-                             :disabled="!field.canEditValue && isAutoloadFrom1C && !!field.value"
+                             :disabled="!field.canEditValue && !!field.filledFrom1C"
                              :label="field.label"
-                             :type="isAutoloadFrom1C && !!field.value ? 'text' : field.type"
-                             :rules="isAutoloadFrom1C && !field.canEditValue && !!field.value ? '' : field.rules"
+                             :type="field.filledFrom1C ? 'text' : field.type"
+                             :rules="!field.canEditValue && field.filledFrom1C ? '' : field.rules"
                              v-model.trim="field.value"/>
                 </template>
               </div>
@@ -66,22 +66,22 @@ export default {
       isAutoloadFrom1C: false,
       isLoading: false,
       fields: [
-        {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6', value: '+7 (123)-12-31-231', autocomplete: false, canEditValue: false},
-        {name: 'email', label: 'Электронная почта', rules: 'email', class: 'col-md-6', value: '123@GMAIL.СOM', autocomplete: false, canEditValue: false},
-        {name: 'snils', label: 'СНИЛС', rules: 'required|digits:11|snils', class: 'col-md-12', value: '92703662611', autocomplete: false, canEditValue: false},
-        {name: 'surname', label: 'Фамилия', rules: 'required', class: 'col-md-4', value: 'g', autocomplete: true, canEditValue: false},
-        {name: 'name', label: 'Имя', rules: 'required', class: 'col-md-4', value: 'G', autocomplete: true, canEditValue: false},
-        {name: 'patronymic', label: 'Отчество', class: 'col-md-4', value: 'G', autocomplete: true, canEditValue: false},
+        {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6', value: '+7 (123)-12-31-231', autocomplete: false, canEditValue: false, filledFrom1C: false},
+        {name: 'email', label: 'Электронная почта', rules: 'email', class: 'col-md-6', value: '123@GMAIL.СOM', autocomplete: false, canEditValue: false, filledFrom1C: false},
+        {name: 'snils', label: 'СНИЛС', rules: 'required|digits:11|snils', class: 'col-md-12', value: '92703662611', autocomplete: false, canEditValue: false, filledFrom1C: false},
+        {name: 'surname', label: 'Фамилия', rules: 'required', class: 'col-md-4', value: 'g', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'name', label: 'Имя', rules: 'required', class: 'col-md-4', value: 'G', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'patronymic', label: 'Отчество', class: 'col-md-4', value: 'G', autocomplete: true, canEditValue: false, filledFrom1C: false},
         {name: 'passport_date_of_birth', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата рождения',
-          rules: 'required',class: 'col-md-12', value: '12.12.2000', autocomplete: true, canEditValue: false},
-        {name: 'passport_series', label: 'Серия', rules: 'digits:4', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false},
-        {name: 'passport_number', label: 'Номер', rules: 'digits:6', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false},
-        {name: 'passport_date_of_issue', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата выдачи', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false},
-        {name: 'passport_division', label: 'Код подразделения', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false},
-        {name: 'passport_issued', label: 'Выдан', class: 'col-md-12', value: '', autocomplete: true, canEditValue: false},
-        {name: 'passport_place_of_birth', label: 'Место рождения', class: 'col-md-12', value: '', autocomplete: true, canEditValue: false},
-        {name: 'registration', label: 'Регистрация', class: 'col-md-12', value: '', autocomplete: true, canEditValue: false},
-        {name: 'post', label: 'Должность абитуриента', class: 'col-md-12', value: '23', autocomplete: true, canEditValue: true},
+          rules: 'required',class: 'col-md-12', value: '12.12.2000', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'passport_series', label: 'Серия', rules: 'digits:4', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'passport_number', label: 'Номер', rules: 'digits:6', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'passport_date_of_issue', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата выдачи', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'passport_division', label: 'Код подразделения', class: 'col-md-3', value: '', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'passport_issued', label: 'Выдан', class: 'col-md-12', value: '', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'passport_place_of_birth', label: 'Место рождения', class: 'col-md-12', value: '', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'registration', label: 'Регистрация', class: 'col-md-12', value: '', autocomplete: true, canEditValue: false, filledFrom1C: false},
+        {name: 'post', label: 'Должность абитуриента', class: 'col-md-12', value: '23', autocomplete: true, canEditValue: true, filledFrom1C: false},
 
       ],
 
@@ -121,7 +121,9 @@ export default {
                   this.isAutoloadFrom1C = true;
                   this.fields = this.fields.map((field) => {
                     if(field.autocomplete){
-                      field.value = response.data.data[field.name] || '';
+                      const value = response.data.data[field.name];
+                      field.value = value || '';
+                      field.filledFrom1C = !!value;
                     }
 
                     return field;
@@ -145,6 +147,7 @@ export default {
     clearFormFields(){
       this.fields = this.fields.map((field) => {
         field.value = field.name === 'snils' ? field.value : '';
+        field.filledFrom1C = false;
         return field;
       });
     },
@@ -186,8 +189,11 @@ export default {
     },
 
     clearFieldsForm: function () {
+      this.fieldsIsDisable = false;
+      this.isAutoloadFrom1C = false;
       this.fields = this.fields.map((field) => {
         field.value = '';
+        field.filledFrom1C = false;
         return field;
       });
     },

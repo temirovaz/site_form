@@ -18,8 +18,8 @@
                 </template>
                 <template v-else-if="field.name === 'passport_division'">
                   <DaDataSuggestion mode="FMS_UNIT" :label="field.label"
-                             :disabled="listener.isLoadedDataFrom1C && !!listener[field.name]"
-                             :rules="listener.isLoadedDataFrom1C && !!listener[field.name] ? '' : field.rules"
+                             :disabled="!!filledFrom1C[field.name]"
+                             :rules="filledFrom1C[field.name] ? '' : field.rules"
                              v-model.trim="listener[field.name]" @dadata-select-suggestion="onDivisionSelected"/>
                 </template>
                 <template v-else>
@@ -27,10 +27,10 @@
                              :max="field.max"
                              :name="field.name"
                              :placeholder="field.placeholder"
-                             :disabled="listener.isLoadedDataFrom1C && !!listener[field.name]"
+                             :disabled="!!filledFrom1C[field.name]"
                              :label="field.label"
-                             :type="listener.isLoadedDataFrom1C && !!listener[field.name] ? 'text' : field.type"
-                             :rules="listener.isLoadedDataFrom1C && !!listener[field.name] ? '' : field.rules"
+                             :type="filledFrom1C[field.name] ? 'text' : field.type"
+                             :rules="filledFrom1C[field.name] ? '' : field.rules"
                              v-model.trim="listener[field.name]"/>
                 </template>
               </div>
@@ -64,6 +64,7 @@ export default {
       listener: {},
       isLoading: false,
       snils: null,
+      filledFrom1C: {},
       mappingForm: [
         [
           {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6' },
@@ -106,6 +107,14 @@ export default {
       this.program = event.params.program;
       this.listener = event.params.listener;
       this.snils = event.params.listener.snils;
+
+      const filled = {};
+      if(this.listener.isLoadedDataFrom1C){
+        this.mappingForm.flat().forEach((field) => {
+          filled[field.name] = !!this.listener[field.name];
+        });
+      }
+      this.filledFrom1C = filled;
     },
 
     async searchDataOnUserBySNILS(snils) {
@@ -115,12 +124,18 @@ export default {
       //10288136338 '39591544233'  61728845217 08229564686
       if(valid){
         this.isLoading = true;
+        this.filledFrom1C = {};
         ApiLikeyService.getListenerBySnilsFrom1C(snils).then(
             (response) => {
               if(response.data.status === "success" ){
                 if(response.data.data){
                   const payload = {...response.data.data, ...{isLoadedDataFrom1C: true, phone: this.listener.phone, email: this.listener.email, snils: snils}};
                   this.listener = ListenerModel.fromObject(payload);
+                  const filled = {};
+                  Object.keys(response.data.data).forEach((key) => {
+                    filled[key] = !!response.data.data[key];
+                  });
+                  this.filledFrom1C = filled;
                 }else{
                   this.clearProtectedReceivedFrom1C();
                 }
@@ -157,6 +172,7 @@ export default {
         this.listener.post = '';
         this.listener.isLoadedDataFrom1C = false;
       }
+      this.filledFrom1C = {};
     }
   }
 
