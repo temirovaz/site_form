@@ -8,6 +8,13 @@ export default class ListenerModel {
         this.phone = '';
         this.post = '';
         this.snils = '';
+        this.passport_series = '';
+        this.passport_number = '';
+        this.passport_date_of_issue = '';
+        this.passport_division = '';
+        this.passport_issued = '';
+        this.passport_place_of_birth = '';
+        this.registration = '';
         this.isLoadedDataFrom1C = false;
         this.fieldsCanBeEdited = [
             'post'
@@ -37,7 +44,14 @@ export default class ListenerModel {
             phone: this.phone,
             post: this.post,
             snils: this.snils,
-            surname: this.surname
+            surname: this.surname,
+            passport_series: this.passport_series,
+            passport_number: this.passport_number,
+            passport_date_of_issue: this.passport_date_of_issue,
+            passport_division: this.passport_division,
+            passport_issued: this.passport_issued,
+            passport_place_of_birth: this.passport_place_of_birth,
+            registration: this.registration
         }
     }
 
@@ -53,6 +67,13 @@ export default class ListenerModel {
             phone : data.phone ,
             post : data.post || data.position,
             snils : data.snils,
+            passport_series : data.passport_series || '',
+            passport_number : data.passport_number || '',
+            passport_date_of_issue : data.passport_date_of_issue || '',
+            passport_division : data.passport_division || '',
+            passport_issued : data.passport_issued || '',
+            passport_place_of_birth : data.passport_place_of_birth || '',
+            registration : data.registration || '',
             isLoadedDataFrom1C : data.isLoadedDataFrom1C !== undefined ? data.isLoadedDataFrom1C : false ,
         };
 

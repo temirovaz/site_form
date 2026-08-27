@@ -16,15 +16,21 @@
                 <template v-else-if="field.name === 'email'">
                   <SuggestionEmail  label="Эл. почта" rules="required|email" v-model.trim="listener[field.name]"></SuggestionEmail>
                 </template>
+                <template v-else-if="field.name === 'passport_division'">
+                  <DaDataSuggestion mode="FMS_UNIT" :label="field.label"
+                             :disabled="!!filledFrom1C[field.name]"
+                             :rules="filledFrom1C[field.name] ? '' : field.rules"
+                             v-model.trim="listener[field.name]" @dadata-select-suggestion="onDivisionSelected"/>
+                </template>
                 <template v-else>
                   <FormField :isLoading="listener.isLoadedDataFrom1C && isLoading"
                              :max="field.max"
                              :name="field.name"
                              :placeholder="field.placeholder"
-                             :disabled="listener.isLoadedDataFrom1C"
+                             :disabled="!!filledFrom1C[field.name]"
                              :label="field.label"
-                             :type="listener.isLoadedDataFrom1C ? 'text' : field.type"
-                             :rules="listener.isLoadedDataFrom1C ? '' : field.rules"
+                             :type="filledFrom1C[field.name] ? 'text' : field.type"
+                             :rules="filledFrom1C[field.name] ? '' : field.rules"
                              v-model.trim="listener[field.name]"/>
                 </template>
               </div>
@@ -58,6 +64,7 @@ export default {
       listener: {},
       isLoading: false,
       snils: null,
+      filledFrom1C: {},
       mappingForm: [
         [
           {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6' },
@@ -75,7 +82,22 @@ export default {
           {name: 'date_of_birth', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата рождения', rules: 'required', class: 'col-md-12'},
         ],
         [
-          {name: 'post', label: 'Должность абитуриента', rules: 'required',class: 'col-md-12', autocomplete: true},
+          {name: 'passport_series', label: 'Серия', rules: 'digits:4', class: 'col-md-3'},
+          {name: 'passport_number', label: 'Номер', rules: 'digits:6', class: 'col-md-3'},
+          {name: 'passport_date_of_issue', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата выдачи', class: 'col-md-3'},
+          {name: 'passport_division', label: 'Код подразделения', class: 'col-md-3'},
+        ],
+        [
+          {name: 'passport_issued', label: 'Выдан', class: 'col-md-12'},
+        ],
+        [
+          {name: 'passport_place_of_birth', label: 'Место рождения', class: 'col-md-12'},
+        ],
+        [
+          {name: 'registration', label: 'Регистрация', class: 'col-md-12'},
+        ],
+        [
+          {name: 'post', label: 'Должность абитуриента', class: 'col-md-12', autocomplete: true},
         ]
       ],
     }
@@ -85,6 +107,14 @@ export default {
       this.program = event.params.program;
       this.listener = event.params.listener;
       this.snils = event.params.listener.snils;
+
+      const filled = {};
+      if(this.listener.isLoadedDataFrom1C){
+        this.mappingForm.flat().forEach((field) => {
+          filled[field.name] = !!this.listener[field.name];
+        });
+      }
+      this.filledFrom1C = filled;
     },
 
     async searchDataOnUserBySNILS(snils) {
@@ -94,18 +124,30 @@ export default {
       //10288136338 '39591544233'  61728845217 08229564686
       if(valid){
         this.isLoading = true;
+        this.filledFrom1C = {};
         ApiLikeyService.getListenerBySnilsFrom1C(snils).then(
             (response) => {
               if(response.data.status === "success" ){
                 if(response.data.data){
                   const payload = {...response.data.data, ...{isLoadedDataFrom1C: true, phone: this.listener.phone, email: this.listener.email, snils: snils}};
                   this.listener = ListenerModel.fromObject(payload);
+                  const filled = {};
+                  Object.keys(response.data.data).forEach((key) => {
+                    filled[key] = !!response.data.data[key];
+                  });
+                  this.filledFrom1C = filled;
                 }else{
                   this.clearProtectedReceivedFrom1C();
                 }
               }
             }
         ).finally( () => this.isLoading = false);
+      }
+    },
+
+    onDivisionSelected(suggestion){
+      if(suggestion.fields.passport_issued){
+        this.listener.passport_issued = suggestion.fields.passport_issued;
       }
     },
 
@@ -130,6 +172,7 @@ export default {
         this.listener.post = '';
         this.listener.isLoadedDataFrom1C = false;
       }
+      this.filledFrom1C = {};
     }
   }
 

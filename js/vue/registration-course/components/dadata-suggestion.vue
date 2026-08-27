@@ -1,6 +1,6 @@
 <template>
   <div class="dadata">
-    <FormField :label="label" :rules="rules" v-model="localValue" :placeholder="placeholder" mode="passive" @keyup="searchSuggestion"/>
+    <FormField :label="label" :rules="rules" v-model="localValue" :placeholder="placeholder" :disabled="disabled" mode="passive" @keyup="searchSuggestion"/>
     <div class="dadata-suggestions" v-if="suggestions.length">
       <div class="dadata-suggestions__list">
         <div class="dadata-suggestions-item"
@@ -14,7 +14,7 @@
 
 export default {
   name: 'DaDataSuggestion',
-  props: [ 'value', 'rules', 'label', 'mode', 'placeholder'],
+  props: [ 'value', 'rules', 'label', 'mode', 'placeholder', 'disabled'],
   data: function () {
     return {
       localValue: '',
@@ -24,7 +24,7 @@ export default {
   methods: {
     searchSuggestion: async function (event) {
       const querySearch = event.target.value;
-      if(!querySearch) return;
+      if(!querySearch || this.disabled) return;
 
       if (this.mode === 'email') {
           const response = await this.$api.dadata.post('/suggest/email', {query: querySearch});
@@ -64,6 +64,24 @@ export default {
           }
       }
 
+      if(this.mode === 'FMS_UNIT'){
+        const response = await this.$api.dadata.post('/suggest/fms_unit', {query: querySearch});
+        this.searchSuggestions();
+        if(response?.data?.suggestions.length){
+          response.data.suggestions.forEach((suggestion) => {
+
+            const formatString = `${suggestion.data.code} — ${suggestion.data.name}`.replaceAll(querySearch, `<span>${querySearch}</span>`);
+
+            this.suggestions.push({ ...suggestion.data, ...{
+                formatString: formatString,
+                value: suggestion.value,
+                passport_division: suggestion.data.code,
+                passport_issued: suggestion.data.name,
+              }})
+          })
+        }
+      }
+
       if(this.mode === 'BANK'){
         const response =  await this.$api.dadata.post('/suggest/bank', {query: querySearch});
         this.searchSuggestions();
@@ -92,7 +110,10 @@ export default {
       if (this.mode === 'email') {
           this.localValue = suggestion.value;
       }
-      if(['INDIVIDUAL', 'LEGAL', 'BANK'].includes(this.mode)){
+      if (this.mode === 'FMS_UNIT') {
+          this.localValue = suggestion.passport_division;
+      }
+      if(['INDIVIDUAL', 'LEGAL', 'BANK', 'FMS_UNIT'].includes(this.mode)){
         this.$emit('dadata-select-suggestion', {fields: suggestion})
       }
     },
