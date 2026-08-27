@@ -13,16 +13,16 @@
                       <FormField :name="field.name" :label="field.label" ref="snils" :rules="field.rules" v-model="field.value" @input="searchDataOnUserBySNILS"/>
                     </template>
                     <template v-else-if="field.name === 'passport_division'">
-                      <DaDataSuggestion mode="FMS_UNIT" :label="field.label" :rules="fieldsIsDisable && !!field.value ? '' : field.rules" :disabled="fieldsIsDisable && !!field.value" v-model.trim="field.value" @dadata-select-suggestion="onDivisionSelected"/>
+                      <DaDataSuggestion mode="FMS_UNIT" :label="field.label" :rules="field.filledFrom1C ? '' : field.rules" :disabled="!!field.filledFrom1C" v-model.trim="field.value" @dadata-select-suggestion="onDivisionSelected"/>
                     </template>
                     <template v-else>
                         <FormField :isLoading="isLoading"
                                  :max="field.max"
-                                 :type="fieldsIsDisable && !!field.value ? 'text' : field.type"
+                                 :type="field.filledFrom1C ? 'text' : field.type"
                                  :name="field.label"
-                                 :disabled="fieldsIsDisable && !!field.value"
+                                 :disabled="!!field.filledFrom1C"
                                  :label="field.label"
-                                 :rules="fieldsIsDisable && !!field.value ? '' : field.rules"
+                                 :rules="field.filledFrom1C ? '' : field.rules"
                                  v-model.trim="field.value"/>
                     </template>
                   </div>
@@ -49,20 +49,20 @@ export default {
     return {
       fieldsIsDisable: true,
       isLoading: false,
-      fields: [  
-        {name: 'snils', label: 'СНИЛС', rules: 'required|digits:11|snils', class: 'col-md-12', value: ''},
-        {name: 'surname', label: 'Фамилия', rules: 'required', class: 'col-md-4'},
-        {name: 'name', label: 'Имя', rules: 'required', class: 'col-md-4'},
-        {name: 'patronymic', label: 'Отчество', rules: 'required', class: 'col-md-4'},
-        {name: 'passport_series', label: 'Серия', rules: 'required|digits:4', class: 'col-md-3'},
-        {name: 'passport_number', label: 'Номер', rules: 'required|digits:6', class: 'col-md-3'},
-        {name: 'passport_date_of_issue', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата выдачи', rules: 'required', class: 'col-md-3'},
-        {name: 'passport_division', label: 'Код подразделения', rules: 'required', class: 'col-md-3'},
-        {name: 'passport_issued', label: 'Выдан', rules: 'required', class: 'col-md-12', value: ''},
-        {name: 'passport_place_of_birth', label: 'Место рождения', rules: 'required', class: 'col-md-12'},
-        {name: 'registration', label: 'Регистрация', rules: 'required', class: 'col-md-12'},
-        {name: 'address', label: 'Почтовый адрес', rules: 'required', class: 'col-md-12'},
-        {name: 'physical_id', type: 'hidden',  value: '', class: 'col-md-12'},
+      fields: [
+        {name: 'snils', label: 'СНИЛС', rules: 'required|digits:11|snils', class: 'col-md-12', value: '', filledFrom1C: false},
+        {name: 'surname', label: 'Фамилия', rules: 'required', class: 'col-md-4', filledFrom1C: false},
+        {name: 'name', label: 'Имя', rules: 'required', class: 'col-md-4', filledFrom1C: false},
+        {name: 'patronymic', label: 'Отчество', rules: 'required', class: 'col-md-4', filledFrom1C: false},
+        {name: 'passport_series', label: 'Серия', rules: 'required|digits:4', class: 'col-md-3', filledFrom1C: false},
+        {name: 'passport_number', label: 'Номер', rules: 'required|digits:6', class: 'col-md-3', filledFrom1C: false},
+        {name: 'passport_date_of_issue', type: 'date', max: new Date().toJSON().split('T')[0], label: 'Дата выдачи', rules: 'required', class: 'col-md-3', filledFrom1C: false},
+        {name: 'passport_division', label: 'Код подразделения', rules: 'required', class: 'col-md-3', filledFrom1C: false},
+        {name: 'passport_issued', label: 'Выдан', rules: 'required', class: 'col-md-12', value: '', filledFrom1C: false},
+        {name: 'passport_place_of_birth', label: 'Место рождения', rules: 'required', class: 'col-md-12', filledFrom1C: false},
+        {name: 'registration', label: 'Регистрация', rules: 'required', class: 'col-md-12', filledFrom1C: false},
+        {name: 'address', label: 'Почтовый адрес', rules: 'required', class: 'col-md-12', filledFrom1C: false},
+        {name: 'physical_id', type: 'hidden',  value: '', class: 'col-md-12', filledFrom1C: false},
       ],
     }
   },
@@ -85,7 +85,11 @@ export default {
                   if(response.data.data){ //DRY
                     this.fieldsIsDisable = true;
                     this.fields = this.fields.map((field) => {
-                      field.value = field.value || response.data.data[field.name] || '';
+                      if(!field.value){
+                        const dataValue = response.data.data[field.name];
+                        field.value = dataValue || '';
+                        field.filledFrom1C = !!dataValue;
+                      }
                         return field;
                     });
                   }else{
@@ -101,6 +105,7 @@ export default {
     clearFormFields(){
       this.fields = this.fields.map((field) => {
         field.value = field.name === 'snils' ? field.value : '';
+        field.filledFrom1C = false;
           return field;
       });
     },
