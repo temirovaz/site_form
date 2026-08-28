@@ -12,9 +12,9 @@
     </div>
     <div class="wizard-footer" v-if="!isFinish">
       <div class="wizard-footer__container">
-        <button v-if="!isFirstStep" class="btn btn-default pull-left" @click="backClicked">Назад</button>
-        <button v-if="!isLastStep" class="btn btn-default pull-right" @click="nextStep">Далее</button>
-        <button v-if="isLastStep" class="btn btn-default pull-right" @click="saveForm">Отправить</button>
+        <button key="back" v-if="!isFirstStep" class="btn btn-default pull-left" :disabled="navigationLocked" @click="backClicked">Назад</button>
+        <button key="next" v-if="!isLastStep" class="btn btn-default pull-right" :disabled="navigationLocked" @click="nextStep">Далее</button>
+        <button key="submit" v-if="isLastStep" class="btn btn-default pull-right" :disabled="navigationLocked" @click="saveForm">Отправить</button>
       </div>
     </div>
   </div>
@@ -37,19 +37,13 @@ export default {
       clickedFinish: false,
       currentStep: 0,
       isFinish: false,
-      steps: [],
+      navigationLocked: false,
       test: ''
     };
   },
   computed: {
-    isFirstStep(){
-      return !this.currentStep;
-    },
-    isLastStep(){
-     return this.currentStep === this.steps.length - 1
-    },
-    component(){
-      let steps = [
+    steps(){
+      const steps = [
         {component: stepContacts},
         {component: stepPayment},
         {component: stepBank},
@@ -57,22 +51,54 @@ export default {
         {component: stemSummary},
       ];
 
-      this.steps = steps;
       if(this.$store?.state?.form?.payment?.type === 'physical') {
-        this.steps = steps.filter((value) => value.component.name !== 'wizard-step-bank');
+        return steps.filter((value) => value.component.name !== 'wizard-step-bank');
       }
+      return steps;
+    },
+    isFirstStep(){
+      return !this.currentStep;
+    },
+    isLastStep(){
+     return this.currentStep === this.steps.length - 1
+    },
+    component(){
       return this.steps[this.currentStep].component
     }
   },
 
+  beforeDestroy() {
+    clearTimeout(this._navigationLockTimer);
+  },
+
   methods: {
+    // При переходе между шагами (особенно сразу после закрытия модалки выбора
+    // программы) первый клик по «Назад»/«Далее»/«Отправить» иногда не приводил
+    // ни к какому эффекту — кнопка оставалась кликабельной, но действие не
+    // происходило; только повторный клик срабатывал. Причина не в обработчике
+    // клика конкретной кнопки (проверено множеством способов — событие доходит
+    // куда угодно, обработчик где угодно не срабатывает), а в том, что сразу
+    // после смены шага какое-то время (порядка полусекунды) взаимодействие
+    // ненадёжно. Поэтому на короткое время после каждого перехода кнопки
+    // навигации явно блокируются (:disabled) — это гарантированно ловит
+    // "потерянный" клик и не даёт его сделать, вместо того чтобы тот тихо пропал.
+    lockNavigation(ms = 600) {
+      this.navigationLocked = true;
+      clearTimeout(this._navigationLockTimer);
+      this._navigationLockTimer = setTimeout(() => {
+        this.navigationLocked = false;
+      }, ms);
+    },
+
     proceedNext(event){
       if(event.status === true){
         this.currentStep++;
+        this.lockNavigation();
       }
-      const wizardBody = this.$refs["wizard-body"];
-      wizardBody.scrollIntoView({ behavior: 'smooth' });
       this.nextButton = false;
+      this.$nextTick(() => {
+        this.$refs["wizard-body"].scrollIntoView({ behavior: 'auto' });
+      });
     },
 
     proceedFinish(event){
@@ -86,13 +112,17 @@ export default {
     },
 
     backClicked(){
+      if(this.navigationLocked) return;
       this.currentStep--;
+      this.lockNavigation();
     },
 
     nextStep() {
+      if(this.navigationLocked) return;
       this.nextButton = true;
     },
     saveForm(){
+      if(this.navigationLocked) return;
       this.clickedFinish = true;
     }
   },
