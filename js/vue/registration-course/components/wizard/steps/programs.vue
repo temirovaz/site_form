@@ -150,12 +150,12 @@ export default {
       let canContinue = true;
       if(ProgramService.getSelectedProgram().length === 0){
         sendNotifyError('Не выбрана учебная программа')
-        canContinue = true;
+        canContinue = false;
       }
       ProgramService.getSelectedProgram().forEach((program) => {
         if(!program.listeners?.length){
           sendNotifyError(`Для программы: "${program.name}", необходимо добавить хотя бы одного слушателя`);
-          canContinue = true;
+          canContinue = false;
         }
       });
 
