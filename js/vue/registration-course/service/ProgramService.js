@@ -1,4 +1,5 @@
 import store from "./../plugins/store";
+import ListenerModel from "../model/ListenerModel";
 
 export default class ProgramService {
 
@@ -31,7 +32,16 @@ export default class ProgramService {
 
     static selectProgram(programModel){
         programModel.selected = true;
-        return this.updateProgram(programModel);
+        this.updateProgram(programModel);
+
+        if(store.state.form.payment.type === 'physical'){
+            const listener = ListenerModel.fromObject({...store.state.form.contact, ...store.state.form.payment});
+            if(!programModel.listeners?.some((item) => item.snils === listener.snils)){
+                this.addListenerInProgram(programModel, listener);
+            }
+        }
+
+        return programModel;
     }
 
     static unSelectProgram(programModel){
