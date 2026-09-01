@@ -1,24 +1,5 @@
 <template>
   <div class="wizard">
-    <!-- Индикатор прогресса -->
-    <div class="wizard-progress" v-if="!isFinish">
-      <div 
-        v-for="(step, index) in progressSteps" 
-        :key="index"
-        class="wizard-progress__step"
-        :class="{
-          'active': index === currentStep,
-          'completed': index < currentStep
-        }"
-      >
-        <div class="wizard-progress__circle">
-          <span v-if="index < currentStep">✓</span>
-          <span v-else>{{ index + 1 }}</span>
-        </div>
-        <div class="wizard-progress__label">{{ step.title }}</div>
-      </div>
-    </div>
-
     <div ref="wizard-body" class="wizard__body" >
       <div  class="wizard__body__step" v-if="!isFinish">
         <keep-alive>
@@ -26,9 +7,7 @@
         </keep-alive>
       </div>
       <div class="wizard-finish-step" v-if="isFinish">
-          <div class="wizard-finish-step__icon">🎉</div>
-          <div class="wizard-finish-step__header">Спасибо! Ваша заявка принята</div>
-          <div class="wizard-finish-step__subheader">Мы свяжемся с вами в ближайшее время</div>
+          <div class="wizard-finish-step__header">Спасибо. Ваша заявка принята</div>
       </div>
     </div>
     <div class="wizard-footer" v-if="!isFinish">
@@ -59,14 +38,7 @@ export default {
       currentStep: 0,
       isFinish: false,
       navigationLocked: false,
-      test: '',
-      progressSteps: [
-        { title: 'Контакты' },
-        { title: 'Плательщик' },
-        { title: 'Банк' },
-        { title: 'Программы' },
-        { title: 'Проверка' }
-      ]
+      test: ''
     };
   },
   computed: {

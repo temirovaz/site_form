@@ -1,141 +1,19 @@
 .wizard{}
-
-// Индикатор прогресса
-.wizard-progress {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 40px;
-  padding: 0 20px;
-  position: relative;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    right: 15px;
-    height: 2px;
-    background: #e0e0e0;
-    z-index: 1;
-  }
-  
-  // Адаптивность для мобильных
-  @include media(small down) {
-    flex-direction: column;
-    gap: 20px;
-    padding: 0 10px;
-    
-    &::before {
-      display: none;
-    }
-  }
-}
-
-.wizard-progress__step {
-  flex: 1;
-  text-align: center;
-  position: relative;
-  z-index: 2;
-  
-  @include media(small down) {
-    display: flex;
-    align-items: center;
-    text-align: left;
-    gap: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-  }
-  
-  &.active {
-    .wizard-progress__circle {
-      background: #881812;
-      color: white;
-      transform: scale(1.1);
-    }
-    
-    .wizard-progress__label {
-      color: #881812;
-      font-weight: 600;
-    }
-  }
-  
-  &.completed {
-    .wizard-progress__circle {
-      background: #4caf50;
-      color: white;
-    }
-    
-    .wizard-progress__label {
-      color: #4caf50;
-    }
-  }
-}
-
-.wizard-progress__circle {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #e0e0e0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 10px;
-  position: relative;
-  transition: all 0.3s ease;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.wizard-progress__label {
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
 .wizard__body{
   border-bottom: 1px solid #e8e8e8;
   margin: 0 0 20px 0;
   min-height: 250px;
 }
-
-.wizard__body__step {
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 .wizard-finish-step{
-  text-align: center;
-  padding: 60px 20px;
-  color: #333;
-}
-
-.wizard-finish-step__icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-}
-
-.wizard-finish-step__header{
-  font-size: 28px;
-  font-weight: bold;
-  margin: 0 0 15px 0;
   color: #881812;
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  height: 250px;
+  align-items: center;
 }
-
-.wizard-finish-step__subheader {
-  color: #666;
-  font-size: 16px;
-  margin-bottom: 30px;
+.wizard-finish-step__header{
+  font-size: 35px;
+  font-weight: bold;
+  margin: 0 0 28px 0;
 }

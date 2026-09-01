@@ -1,127 +1,26 @@
 
-// Улучшенные кнопки
-.btn {
-  border-radius: 6px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  padding: 12px 24px;
-  border: 2px solid transparent;
-  cursor: pointer;
-  font-size: 14px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-  
-  &.btn-primary {
-    background: #881812;
-    border-color: #881812;
-    color: white;
-    
-    &:hover {
-      background: #a31d16;
-      border-color: #a31d16;
-    }
-  }
-  
-  &.btn-default {
-    background: #6c757d;
-    border-color: #6c757d;
-    color: white;
-    
-    &:hover {
-      background: #5a6268;
-      border-color: #5a6268;
-    }
-  }
-  
-  &.btn-outline {
-    background: transparent;
-    border-color: #881812;
-    color: #881812;
-    
-    &:hover {
-      background: #881812;
-      color: white;
-    }
-  }
-  
-  &.btn-sm {
-    padding: 8px 16px;
-    font-size: 12px;
-  }
-  
-  &.btn-xs {
-    padding: 4px 8px;
-    font-size: 11px;
-  }
-}
-
 .button-icon{
-  padding: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  
-  &.-remove{
-    background: #e74c3c;
-    color: white;
-    
-    &:hover {
-      background: #c0392b;
-      transform: scale(1.1);
+    padding: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: transparent;
+    &.-remove{
+        background: #881812;
     }
-  }
-  
-  &.-edit {
-    background: #f39c12;
-    color: white;
-    
-    &:hover {
-      background: #e67e22;
-      transform: scale(1.1);
-    }
-  }
 }
-
 .button-text{
-  padding: 0;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &.-remove{
-    color: #e74c3c;
-    
-    &:hover{
-      color: #c0392b;
-      text-decoration: underline;
+    padding: 0;
+    background: transparent;
+    border: none;
+    &.-remove{
+        color: #881812;
+        &:hover{
+            color: #a31d16;
+            text-decoration: underline;
+        }
     }
-  }
-  
-  &.-edit {
-    color: #f39c12;
-    
-    &:hover {
-      color: #e67e22;
-      text-decoration: underline;
-    }
-  }
+
 }
 
 
