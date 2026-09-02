@@ -25,7 +25,7 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-default btn-sm" @click="saveListenersInProgram">Сохранить</button>
+      <button type="button" class="btn btn-default btn-sm" @click="$modal.hide(modalName)">Закрыть</button>
     </div>
   </modal>
 </template>
@@ -70,39 +70,19 @@ export default {
     },
 
     unSelectListerForProgram: function (listener){
-      this.listeners = this.listeners.map((item, index) => {
-        if(item.snils === listener.snils){
-          item.selected = false;
-        }
-        return item;
-      })
+      listener.selected = false;
+      this.listeners = [...this.listeners];
+      const model = listenerModel.fromObject(listener);
+      programService.removeListenerWithProgram(this.program, model);
     },
 
     selectListerForProgram: function (listener){
-        this.listeners = this.listeners.map((item, index) => {
-          if(item.snils === listener.snils){
-            item.selected = true;
-          }
-          return item;
-        })
-    },
-
-    saveListenersInProgram: function (){
-
-       this.listeners.forEach((listener) => {
-
-          const model =  listenerModel.fromObject(listener);
-
-          if(listener.selected){
-            if(!ListenerService.hasListenerInProgram(this.program, model)){
-              ProgramService.addListenerInProgram(this.program, model);
-            }
-          }else{
-            programService.removeListenerWithProgram(this.program, model)
-          }
-
-        });
-        this.$modal.hide(this.modalName);
+      listener.selected = true;
+      this.listeners = [...this.listeners];
+      const model = listenerModel.fromObject(listener);
+      if(!ListenerService.hasListenerInProgram(this.program, model)){
+        ProgramService.addListenerInProgram(this.program, model);
+      }
     },
 
 
