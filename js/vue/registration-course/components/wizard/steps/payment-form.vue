@@ -31,6 +31,7 @@
 import physicalForm from './payment-form/physical-form';
 import IPForm from './payment-form/ip-form';
 import legalForm from './payment-form/legal-form';
+import {sendNotifyError} from '../../../plugins/toast';
 
 export default {
   name: 'wizard-step-payment',
@@ -56,7 +57,17 @@ export default {
   watch: {
     payment: function (value) {
       this.component = this.components[value]
-    }
+    },
+    clickedNext: function (status) {
+      // Пока не выбран тип плательщика, дочерний компонент (legal/ip/physical) ещё
+      // не смонтирован и некому обработать clickedNext — без этой ветки nextButton
+      // в wizard.vue навсегда застревал в true, и «Далее» переставало работать
+      // даже после выбора типа и заполнения формы.
+      if(status === true && !this.component){
+        sendNotifyError('Выберите тип плательщика');
+        this.$emit('can-continue', {status: false});
+      }
+    },
   },
 }
 </script>
