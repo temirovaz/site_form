@@ -11,10 +11,10 @@
       </div>
     </div>
     <div class="wizard-footer" v-if="!isFinish">
-      <div class="wizard-footer__container">
-        <button key="back" v-if="!isFirstStep" class="btn btn-default pull-left" :disabled="navigationLocked" @click="backClicked">Назад</button>
-        <button key="next" v-if="!isLastStep" class="btn btn-default pull-right" :disabled="navigationLocked" @click="nextStep">Далее</button>
-        <button key="submit" v-if="isLastStep" class="btn btn-default pull-right" :disabled="navigationLocked" @click="saveForm">Отправить</button>
+      <div class="wizard-footer__container" :style="navigationLocked ? {opacity: 0.6} : null">
+        <button key="back" v-if="!isFirstStep" class="btn btn-default pull-left" @click="backClicked">Назад</button>
+        <button key="next" v-if="!isLastStep" class="btn btn-default pull-right" @click="nextStep">Далее</button>
+        <button key="submit" v-if="isLastStep" class="btn btn-default pull-right" @click="saveForm">Отправить</button>
       </div>
     </div>
   </div>
@@ -38,6 +38,7 @@ export default {
       currentStep: 0,
       isFinish: false,
       navigationLocked: false,
+      pendingAction: null,
       test: ''
     };
   },
@@ -80,15 +81,23 @@ export default {
     // клика конкретного элемента (проверено множеством способов — событие
     // доходит куда угодно, обработчик где угодно не срабатывает), а в том, что
     // сразу после смены шага какое-то время (порядка полусекунды-секунды)
-    // взаимодействие с этой частью страницы ненадёжно. Поэтому на короткое
-    // время после каждого перехода блокируется весь шаг целиком (pointer-events)
-    // и кнопки футера (:disabled) — это гарантированно ловит "потерянный" клик
-    // и не даёт его сделать, вместо того чтобы тот тихо пропал.
+    // взаимодействие с этой частью страницы ненадёжно. На это время блокируется
+    // весь шаг целиком (pointer-events) — там нет способа "запомнить" клик.
+    // Кнопки футера устроены иначе: они остаются кликабельными (только визуально
+    // притушены), а их обработчики (см. backClicked/nextStep/saveForm) при
+    // клике во время блокировки не игнорируют его, а откладывают действие и
+    // выполняют его сами, как только блокировка снимается — так что реальному
+    // пользователю достаточно одного клика, даже если он попал в это окно.
     lockNavigation(ms = 700) {
       this.navigationLocked = true;
       clearTimeout(this._navigationLockTimer);
       this._navigationLockTimer = setTimeout(() => {
         this.navigationLocked = false;
+        if(this.pendingAction){
+          const action = this.pendingAction;
+          this.pendingAction = null;
+          action();
+        }
       }, ms);
     },
 
@@ -114,17 +123,17 @@ export default {
     },
 
     backClicked(){
-      if(this.navigationLocked) return;
+      if(this.navigationLocked){ this.pendingAction = () => this.backClicked(); return; }
       this.currentStep--;
       this.lockNavigation();
     },
 
     nextStep() {
-      if(this.navigationLocked) return;
+      if(this.navigationLocked){ this.pendingAction = () => this.nextStep(); return; }
       this.nextButton = true;
     },
     saveForm(){
-      if(this.navigationLocked) return;
+      if(this.navigationLocked){ this.pendingAction = () => this.saveForm(); return; }
       this.clickedFinish = true;
     }
   },
