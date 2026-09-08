@@ -6,6 +6,7 @@ export default class ProgramService {
     static addListenerInProgram(program, listenerModel){
         program.listeners = program.listeners || [];
         program.listeners.push(listenerModel.toStore());
+        store.commit('registerKnownListener', listenerModel.toStore());
         this.updateProgram(program);
 
     }
@@ -20,7 +21,7 @@ export default class ProgramService {
             });
           this.updateProgram(program);
         })
-
+      store.commit('registerKnownListener', listenerModel.toStore ? listenerModel.toStore() : listenerModel);
     }
 
     static removeListenerWithProgram(program, listenerModel){
