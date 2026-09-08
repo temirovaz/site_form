@@ -8,6 +8,7 @@
       </div>
       <div class="wizard-finish-step" v-if="isFinish">
           <div class="wizard-finish-step__header">Спасибо. Ваша заявка принята</div>
+          <div class="wizard-finish-step__description">Мы уже начали работу на ней. После назначения ответственного, вам на электронную почту поступит уведомление.</div>
       </div>
     </div>
     <div class="wizard-footer" v-if="!isFinish">
