@@ -102,6 +102,13 @@ export default {
     },
 
     proceedNext(event){
+      // Защита от повторного/устаревшего can-continue: при быстром переходе
+      // назад watcher на clickedNext у деактивированного (keep-alive) шага может
+      // "доиграть" отложенное срабатывание при повторной активации компонента —
+      // со старым значением true, уже после того как nextButton был сброшен в
+      // false. Без этой проверки currentStep увеличивался сам по себе сразу
+      // после перехода назад, выглядя как "проглоченный" клик по «Назад».
+      if(!this.nextButton) return;
       if(event.status === true){
         this.currentStep++;
         this.lockNavigation();
@@ -113,7 +120,7 @@ export default {
     },
 
     proceedFinish(event){
-
+      if(!this.clickedFinish) return;
       if(event.status === true){
         ApiLikeyService.sendFormForSaveTo1C().then((response) => {
           this.isFinish = true;
