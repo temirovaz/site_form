@@ -123,4 +123,63 @@ describe('wizard.vue — отправка заявки («Отправить»)'
         resolveSend({data: {status: 'success'}});
         await flushPromises();
     });
+
+    it('блокирует «Назад» на время отправки заявки, чтобы нельзя было уйти со страницы', async () => {
+        let resolveSend;
+        mockSendFormForSaveTo1C.mockImplementation(() => new Promise((resolve) => {
+            resolveSend = resolve;
+        }));
+
+        const wrapper = mountWizard();
+        wrapper.setData({currentStep: wrapper.vm.steps.length - 1});
+        await wrapper.vm.$nextTick();
+
+        const findBackButton = () => wrapper.findAll('button').filter((btn) => btn.text() === 'Назад').at(0);
+
+        expect(findBackButton().attributes('disabled')).toBeFalsy();
+
+        wrapper.vm.saveForm();
+        wrapper.vm.proceedFinish({status: true});
+        await wrapper.vm.$nextTick();
+
+        // Кнопка визуально задизейблена...
+        expect(findBackButton().attributes('disabled')).toBeTruthy();
+        // ...и клик по ней (в обход disabled, напрямую через обработчик) тоже
+        // не должен переключать шаг, пока ответ 1С не пришёл.
+        const stepBefore = wrapper.vm.currentStep;
+        wrapper.vm.backClicked();
+        expect(wrapper.vm.currentStep).toBe(stepBefore);
+
+        // Успешный ответ 1С переводит визард на экран «Спасибо» (isFinish),
+        // футер с кнопками исчезает целиком — проверять disabled после этого
+        // уже нечего. Просто даём промису доиграть, чтобы не оставлять «повисший»
+        // resolve в следующем тесте.
+        resolveSend({data: {status: 'success'}});
+        await flushPromises();
+    });
+
+    it('снимает блокировку с «Назад» после ошибки, а не только после успеха', async () => {
+        let rejectSend;
+        mockSendFormForSaveTo1C.mockImplementation(() => new Promise((resolve, reject) => {
+            rejectSend = reject;
+        }));
+
+        const wrapper = mountWizard();
+        wrapper.setData({currentStep: wrapper.vm.steps.length - 1});
+        await wrapper.vm.$nextTick();
+
+        const findBackButton = () => wrapper.findAll('button').filter((btn) => btn.text() === 'Назад').at(0);
+
+        wrapper.vm.saveForm();
+        wrapper.vm.proceedFinish({status: true});
+        await wrapper.vm.$nextTick();
+
+        expect(findBackButton().attributes('disabled')).toBeTruthy();
+
+        rejectSend(new Error('network error'));
+        await flushPromises();
+        await wrapper.vm.$nextTick();
+
+        expect(findBackButton().attributes('disabled')).toBeFalsy();
+    });
 });
