@@ -3,7 +3,6 @@
   "private": true,
   "version": "1.0.0",
   "description": "Локальный стенд и тесты формы заявки на обучение. Боевая сборка живёт уровнем выше на серверах и в этом репозитории не хранится.",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "stand:init": "node dev-stand/init.mjs",
