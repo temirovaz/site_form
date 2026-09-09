@@ -3,16 +3,26 @@
 Позволяет открыть форму в браузере без Bitrix, 1С и DaData.
 
 ```bash
+node dev-stand/bootstrap.mjs   # раскладывает package.json и конфиги в корень репозитория
 npm install
-npm run stand:init     # создаёт js/vue/registration-course/plugins/api.js из mock-api.js
-npm run dev            # http://localhost:5173
+npm run stand:init             # создаёт js/vue/registration-course/plugins/api.js из mock-api.js
+npm run dev                    # http://localhost:5173
 ```
 
 ## Как это устроено
 
-- `index.html` (в корне) — точка входа стенда. Базовые стили шаблона Bitrix (`.form-control`,
-  `.btn`, шрифты, сетка) подтягиваются с боевого сайта, потому что самого шаблона в
-  репозитории нет.
+- `templates/` — шаблоны `package.json`, `vite.config.mjs`, `vitest.config.mjs`,
+  `playwright.config.mjs`, `index.html`. Отслеживаются git здесь, но не в корне репозитория:
+  корень физически совпадает с `local/templates/aspro-allcorp2/resources/` на серверах, а
+  боевой webpack-конфиг лежит уровнем выше и резолвит модули относительно этого же корня.
+  Трекаемый `package.json` в корне уже один раз ломал прод-сборку.
+- `bootstrap.mjs` — копирует файлы из `templates/` в корень репозитория. Обычный Node-скрипт
+  (не npm-скрипт: до его запуска `package.json` в корне ещё не существует). Не перезаписывает
+  молча уже существующие в корне файлы — предупреждает и пропускает, если не передан `--force`.
+  Файлы, скопированные в корень, перечислены в `.gitignore` и не попадают в git.
+- `index.html` (после bootstrap — в корне) — точка входа стенда. Базовые стили шаблона Bitrix
+  (`.form-control`, `.btn`, шрифты, сетка) подтягиваются с боевого сайта, потому что самого
+  шаблона в репозитории нет.
 - `mock-api.js` — заглушка вместо `plugins/api.js`. Отдаёт синтетические ответы 1С и DaData
   с задержкой, отправку заявки печатает в консоль браузера.
 - `init.mjs` — копирует заглушку в `plugins/api.js`, **только если файла ещё нет**.
