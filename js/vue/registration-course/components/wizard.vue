@@ -15,7 +15,7 @@
       <div class="wizard-footer__container" :style="navigationLocked ? {opacity: 0.6} : null">
         <button key="back" v-if="!isFirstStep" class="btn btn-default pull-left" @click="backClicked">Назад</button>
         <button key="next" v-if="!isLastStep" class="btn btn-default pull-right" @click="nextStep">Далее</button>
-        <button key="submit" v-if="isLastStep" class="btn btn-default pull-right" @click="saveForm">Отправить</button>
+        <button key="submit" v-if="isLastStep" class="btn btn-default pull-right" :disabled="submitInProgress" @click="saveForm">Отправить</button>
       </div>
     </div>
   </div>
@@ -40,6 +40,7 @@ export default {
       isFinish: false,
       navigationLocked: false,
       pendingAction: null,
+      submitInProgress: false,
       test: ''
     };
   },
@@ -125,10 +126,22 @@ export default {
 
     proceedFinish(event){
       if(!this.clickedFinish) return;
-      if(event.status === true){
-        ApiLikeyService.sendFormForSaveTo1C().then((response) => {
-          this.isFinish = true;
-        });
+      // Пока идёт запрос в 1С, повторный клик по «Отправить» не должен запускать
+      // второй sendFormForSaveTo1C(): clickedFinish сбрасывается ниже сразу же,
+      // не дожидаясь ответа сети, — без submitInProgress второй клик успевал бы
+      // пройти false→true ещё раз и отправить заявку дублем.
+      if(event.status === true && !this.submitInProgress){
+        this.submitInProgress = true;
+        ApiLikeyService.sendFormForSaveTo1C()
+          .then(() => {
+            this.isFinish = true;
+          })
+          .catch(() => {
+            sendNotifyError('Не удалось отправить заявку. Проверьте соединение и попробуйте ещё раз.');
+          })
+          .finally(() => {
+            this.submitInProgress = false;
+          });
       }
       this.clickedFinish = false;
     },
@@ -144,6 +157,11 @@ export default {
       this.nextButton = true;
     },
     saveForm(){
+      // submitInProgress не задерживает клик через pendingAction, как navigationLocked:
+      // пока первый запрос к 1С не завершился, повторный клик просто игнорируется —
+      // ставить его в очередь и отправлять форму второй раз, как только придёт первый
+      // ответ, не нужно.
+      if(this.submitInProgress) return;
       if(this.navigationLocked){ this.pendingAction = () => this.saveForm(); return; }
       this.clickedFinish = true;
     }
