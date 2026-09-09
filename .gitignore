@@ -1,2 +1,15 @@
+# Реальные креды 1С и DaData — настраиваются вручную на каждом сервере
 api.js
+
+# Локальный контекст и окружение Claude Code
 CLAUDE.md
+SETUP.md
+.claude/
+reports/
+
+# Локальный стенд и тесты
+node_modules/
+dist/
+.vite/
+test-results/
+playwright-report/
