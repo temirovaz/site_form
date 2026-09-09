@@ -28,7 +28,7 @@ export default class ProgramService {
         program.listeners = program?.listeners?.filter((listener) => {
             return listener.snils !== listenerModel.snils;
         });
-        this.updateProgram('updateProgram', program);
+        this.updateProgram(program);
     }
 
     static selectProgram(programModel){
