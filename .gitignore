@@ -13,3 +13,16 @@ dist/
 .vite/
 test-results/
 playwright-report/
+
+# Конфиги окружения — генерируются в корень из dev-stand/templates/ через
+# `node dev-stand/bootstrap.mjs`. Слэш в начале — бьёт только по корню репозитория,
+# одноимённые файлы в dev-stand/templates/ остаются отслеживаемыми.
+# Причина: боевой webpack-конфиг лежит уровнем выше и резолвит модули относительно
+# этого же корня — трекаемый package.json в корне уже один раз сломал прод-сборку
+# ("type":"module" конфликтовал с резолвом entries/application.js).
+/package.json
+/package-lock.json
+/vite.config.mjs
+/vitest.config.mjs
+/playwright.config.mjs
+/index.html
