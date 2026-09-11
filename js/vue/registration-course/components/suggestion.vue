@@ -2,7 +2,7 @@
   <div>
     <ValidationProvider :rules="rules" :name="label || name"  mode="passive"  v-slot="{ errors}" ref="validator" >
       <div class="form-group" :class="{'has-error' : errors.length}">
-        <label class="form-control-label" :class="{'form-control-label__required': rules}">
+        <label class="form-control-label" :class="{'form-control-label__required': rules && rules.includes('required')}">
           <b>{{ label }}</b>
         </label>
         <vue-simple-suggest
