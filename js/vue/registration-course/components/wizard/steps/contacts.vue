@@ -7,6 +7,11 @@
         <SuggestionEmail label="Эл. почта" rules="required|email" v-model="email"></SuggestionEmail>
       </form>
     </ValidationObserver>
+
+    <div class="checkbox-container">
+      <input type="checkbox" id="decline-application" v-model="declineApplication">
+      <label for="decline-application">Не хочу заполнять заявку</label>
+    </div>
     
     <!-- Чек-бокс политики обработки персональных данных -->
     <div class="checkbox-container">
@@ -33,6 +38,7 @@ export default {
     return {
       phone: '',
       email: '',
+      declineApplication: false,
       privacyPolicyAccepted: false,
       showPrivacyPolicyError: false,
     }
