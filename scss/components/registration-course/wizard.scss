@@ -22,3 +22,45 @@
   font-size: 16px;
   font-weight: normal;
 }
+
+.btn.btn-default.wizard-navigation-button {
+  min-width: 112px;
+  padding: 11px 24px;
+  overflow: hidden;
+  color: #fff;
+  font-weight: 500;
+  letter-spacing: .01em;
+  background: linear-gradient(135deg, #555b61 0%, #3d4247 52%, #2d3135 100%);
+  border: 1px solid #353a3f;
+  border-radius: 999px;
+  box-shadow: 0 3px 8px rgba(36, 40, 44, .18);
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+
+  &:hover,
+  &:focus {
+    color: #fff;
+    background: linear-gradient(135deg, #60666c 0%, #464c51 52%, #33383c 100%);
+    border-color: #41474c;
+    box-shadow: 0 5px 12px rgba(36, 40, 44, .24);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(75, 81, 87, .25);
+    outline-offset: 3px;
+  }
+
+  &:active {
+    background: linear-gradient(135deg, #3f4449 0%, #303438 100%);
+    box-shadow: 0 2px 5px rgba(36, 40, 44, .2);
+    transform: translateY(0);
+  }
+
+  &:disabled,
+  &:disabled:hover {
+    opacity: .55;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+  }
+}

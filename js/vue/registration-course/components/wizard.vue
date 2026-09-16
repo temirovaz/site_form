@@ -13,9 +13,9 @@
     </div>
     <div class="wizard-footer" v-if="!isFinish">
       <div class="wizard-footer__container" :style="navigationLocked ? {opacity: 0.6} : null">
-        <button key="back" v-if="!isFirstStep" class="btn btn-default pull-left" :disabled="submitInProgress" @click="backClicked">Назад</button>
-        <button key="next" v-if="!isLastStep" class="btn btn-default pull-right" @click="nextStep">Далее</button>
-        <button key="submit" v-if="isLastStep" class="btn btn-default pull-right" :disabled="submitInProgress" @click="saveForm">Отправить</button>
+        <button key="back" v-if="!isFirstStep" class="btn btn-default wizard-navigation-button pull-left" :disabled="submitInProgress" @click="backClicked">Назад</button>
+        <button key="next" v-if="!isLastStep" class="btn btn-default wizard-navigation-button pull-right" @click="nextStep">Далее</button>
+        <button key="submit" v-if="isLastStep" class="btn btn-default wizard-navigation-button pull-right" :disabled="submitInProgress" @click="saveForm">Отправить</button>
       </div>
     </div>
   </div>
