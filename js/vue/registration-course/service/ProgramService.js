@@ -1,10 +1,12 @@
 import store from "./../plugins/store";
+import ListenerModel from "../model/ListenerModel";
 
 export default class ProgramService {
 
     static addListenerInProgram(program, listenerModel){
         program.listeners = program.listeners || [];
         program.listeners.push(listenerModel.toStore());
+        store.commit('registerKnownListener', listenerModel.toStore());
         this.updateProgram(program);
 
     }
@@ -19,19 +21,28 @@ export default class ProgramService {
             });
           this.updateProgram(program);
         })
-
+      store.commit('registerKnownListener', listenerModel.toStore ? listenerModel.toStore() : listenerModel);
     }
 
     static removeListenerWithProgram(program, listenerModel){
         program.listeners = program?.listeners?.filter((listener) => {
             return listener.snils !== listenerModel.snils;
         });
-        this.updateProgram('updateProgram', program);
+        this.updateProgram(program);
     }
 
     static selectProgram(programModel){
         programModel.selected = true;
-        return this.updateProgram(programModel);
+        this.updateProgram(programModel);
+
+        if(store.state.form.payment.type === 'physical'){
+            const listener = ListenerModel.fromObject({...store.state.form.contact, ...store.state.form.payment});
+            if(!programModel.listeners?.some((item) => item.snils === listener.snils)){
+                this.addListenerInProgram(programModel, listener);
+            }
+        }
+
+        return programModel;
     }
 
     static unSelectProgram(programModel){

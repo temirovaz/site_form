@@ -3,7 +3,7 @@
     <div class="form-group form-control-spinner" :class="{'has-error' : errors.length}">
       <img v-if="isLoading" class="form-control-spinner__svg" height="9" src="/local/templates/aspro-allcorp2/images/svg/spinner-input-red.svg">
       <template v-if="!labelDisabled">
-        <label @click="$refs.input.$el.focus()" class="form-control-label" :class="{'form-control-label__required': rules}">
+        <label @click="$refs.input.$el.focus()" class="form-control-label" :class="{'form-control-label__required': rules && rules.includes('required')}">
           <b>{{ label }}</b>
         </label>
       </template>

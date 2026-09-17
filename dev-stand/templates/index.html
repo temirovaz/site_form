@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Заявка на обучение — локальный стенд</title>
+    <!-- Только для локального стенда: базовые стили (.form-control, .btn, шрифт, сетка) на боевом
+         сайте приходят из шаблона Bitrix (aspro-allcorp2), которого нет в этом репозитории.
+         Подключаем их напрямую с боевого сайта, чтобы стенд был похож на реальный вид. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300italic,400italic,500italic,700italic,400,300,500,700&subset=latin,cyrillic-ext">
+    <link rel="stylesheet" href="https://tver.likey.su/bitrix/cache/css/s1/aspro-allcorp2/template_3451c89ed12cfb696109a7b1e1d9aeab/template_3451c89ed12cfb696109a7b1e1d9aeab_v1.css">
+</head>
+<body>
+    <!-- На боевом сайте эта разметка лежит в шаблоне Bitrix: Vue монтируется в #app и
+         компилирует его содержимое как шаблон. Здесь она воспроизведена вручную. -->
+    <div class="container" style="max-width:960px;margin:24px auto;padding:0 16px">
+        <div id="app">
+            <wizard></wizard>
+        </div>
+    </div>
+    <script>
+        // Заглушка виджета Jivo-чата, который есть на боевом сайте
+        window.jivo_api = {open(){}, close(){}};
+    </script>
+    <script type="module" src="/entries/application.js"></script>
+</body>
+</html>

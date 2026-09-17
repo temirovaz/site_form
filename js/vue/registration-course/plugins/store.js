@@ -11,6 +11,11 @@ import ProgramModel from "../model/ProgramModel";
 const store = new Vuex.Store({
     state: {
         programs: [],
+        // Слушатели, добавленные хотя бы раз за эту сессию заполнения заявки —
+        // не зависит от того, в какой программе они сейчас числятся. Нужно, чтобы
+        // после удаления слушателя из всех программ его можно было выбрать снова
+        // через «Добавить слушателя», а не вводить те же данные заново.
+        knownListeners: [],
         form: {
             "contact": {
             },
@@ -69,6 +74,19 @@ const store = new Vuex.Store({
                 this.commit('updateProgram', payload);
             }
 
+        },
+        registerKnownListener(state, listener){
+            const index = state.knownListeners.findIndex((item) => item.snils === listener.snils);
+            if(index === -1){
+                // Ограничение на случай очень длинной сессии с большим числом разных
+                // слушателей — вытесняем самого старого, чтобы список не рос бесконечно.
+                if(state.knownListeners.length >= 100){
+                    state.knownListeners.shift();
+                }
+                state.knownListeners.push(listener);
+            }else{
+                state.knownListeners.splice(index, 1, listener);
+            }
         },
         addListenerInProgram(state, payload){
 
