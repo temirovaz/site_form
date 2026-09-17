@@ -1,11 +1,12 @@
 .radio-button{
   display: flex;
+  gap: 8px;
   @include media(medium down){
     flex-wrap: wrap;
   }
 }
 .radio-button-item{
-  background: #eee;
+  background: transparent;
   @include media(medium down){
     flex: 1 1 auto;
     margin: 0 0 5px 0;
@@ -15,30 +16,19 @@
    display: none;
   }
   input[type=radio]:checked + label {
-    background: #881812;
-    color: white;
+    @include pill-button-selected;
   }
   label{
-    padding: 7px 15px 8px;
+    @include pill-button;
+    display: inline-block;
+    padding: 8px 20px;
     font-size: 0.867em;
     margin: 0;
-    border: 1px solid #999;
-    border-right: none;
     cursor: pointer;
     @include media(medium down){
       display: block;
       width: 100%;
-      border: none;
-    }
-  }
-  &:first-child label {
-    border-radius: 2px 0 0 2px;
-  }
-  &:last-child label {
-    border-radius: 0 2px 2px 0;
-    border-right: 1px solid #999;
-    @include media(medium down){
-      border: none;
+      text-align: center;
     }
   }
 }
