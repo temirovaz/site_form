@@ -16,6 +16,10 @@ const store = new Vuex.Store({
         // после удаления слушателя из всех программ его можно было выбрать снова
         // через «Добавить слушателя», а не вводить те же данные заново.
         knownListeners: [],
+        // Пользователь отказался заполнять заявку сам и оставил контакты, чтобы
+        // менеджер связался и оформил её за него. Лежит вне form: это состояние
+        // интерфейса (каким показать футер мастера), а не поле заявки для 1С.
+        declineApplication: false,
         form: {
             "contact": {
             },
@@ -47,6 +51,9 @@ const store = new Vuex.Store({
         },
         storePrograms (state, payload){
             state.programs = payload;
+        },
+        setDeclineApplication(state, value){
+            state.declineApplication = value;
         },
         updateProgram(state, program){
             state.programs = state.programs.map((item) => {

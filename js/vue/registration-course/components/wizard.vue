@@ -14,8 +14,8 @@
     <div class="wizard-footer" v-if="!isFinish">
       <div class="wizard-footer__container" :style="navigationLocked ? {opacity: 0.6} : null">
         <button key="back" v-if="!isFirstStep" class="btn btn-default pull-left" :disabled="submitInProgress" @click="backClicked">Назад</button>
-        <button key="next" v-if="!isLastStep" class="btn btn-default pull-right" @click="nextStep">Далее</button>
-        <button key="submit" v-if="isLastStep" class="btn btn-default pull-right" :disabled="submitInProgress" @click="saveForm">Отправить</button>
+        <button key="next" v-if="!isSubmitStep" class="btn btn-default pull-right" @click="nextStep">Далее</button>
+        <button key="submit" v-if="isSubmitStep" class="btn btn-default pull-right" :disabled="submitInProgress" @click="saveForm">Отправить</button>
       </div>
     </div>
   </div>
@@ -64,6 +64,12 @@ export default {
     },
     isLastStep(){
      return this.currentStep === this.steps.length - 1
+    },
+    // Кроме последнего шага, отправка возможна прямо с первого: если человек
+    // отказался заполнять заявку сам и оставил контакты, остальные шаги за него
+    // заполнит менеджер (см. wizard/steps/contacts.vue).
+    isSubmitStep(){
+      return this.isLastStep || (this.isFirstStep && this.$store?.state?.declineApplication === true);
     },
     component(){
       return this.steps[this.currentStep].component
