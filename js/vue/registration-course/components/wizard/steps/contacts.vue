@@ -4,7 +4,7 @@
     <ValidationObserver ref="form">
       <form>
         <FormField label="Телефон" name="phone" :rules="phoneRules" v-model="phone"  placeholder="+7(___)___-__-__" />
-        <SuggestionEmail label="Эл. почта" :rules="emailRules" v-model="email"></SuggestionEmail>
+        <SuggestionEmail label="Эл. почта" rules="required|email" v-model="email"></SuggestionEmail>
       </form>
     </ValidationObserver>
 
@@ -13,10 +13,7 @@
       <label for="decline-application">Не хочу оформлять заявку — свяжитесь со мной и заполните её за меня</label>
     </div>
     <div v-if="declineApplication" class="decline-hint">
-      Оставьте телефон или эл. почту — остальное менеджер заполнит вместе с вами.
-    </div>
-    <div v-if="showContactRequiredError" class="error-message">
-      Укажите телефон или эл. почту, чтобы мы могли с вами связаться
+      Укажите эл. почту — на неё придёт подтверждение заявки. Телефон по желанию, остальное менеджер заполнит вместе с вами.
     </div>
 
     <!-- Чек-бокс политики обработки персональных данных -->
@@ -55,26 +52,19 @@ export default {
       declineApplication: false,
       privacyPolicyAccepted: false,
       showPrivacyPolicyError: false,
-      showContactRequiredError: false,
     }
   },
   computed: {
-    hasAnyContact(){
-      return Boolean(this.phone?.trim() || this.email?.trim());
-    },
     // Заявку отправляем прямо с этого шага, когда человек отказался заполнять её
-    // сам и оставил хотя бы один способ связи — заполнять остальные шаги за него
-    // будет менеджер.
+    // сам и оставил почту — заполнять остальные шаги за него будет менеджер.
     isDeclineSubmit(){
-      return this.declineApplication && this.hasAnyContact;
+      return this.declineApplication && Boolean(this.email?.trim());
     },
-    // При отказе достаточно одного контакта из двух, поэтому required снимается
-    // с обоих полей, а «хотя бы один» проверяется отдельно (см. validateStep).
+    // Почта обязательна всегда: без неё заявке некуда уйти — подтверждение и
+    // дальнейшая переписка идут по почте. При отказе от заполнения необязательным
+    // становится только телефон.
     phoneRules(){
       return this.declineApplication ? '' : 'required';
-    },
-    emailRules(){
-      return this.declineApplication ? 'email' : 'required|email';
     }
   },
   watch: {
@@ -103,13 +93,8 @@ export default {
   methods: {
     validateStep(){
       this.showPrivacyPolicyError = false;
-      this.showContactRequiredError = false;
 
       return this.$refs.form.validate().then(success => {
-        if(this.declineApplication && !this.hasAnyContact){
-          this.showContactRequiredError = true;
-          return false;
-        }
         if(!this.privacyPolicyAccepted){
           this.showPrivacyPolicyError = true;
           return false;
