@@ -1,35 +1,40 @@
-// Поля ввода приходят из шаблона Bitrix с прямыми углами — скругляем под тот же
-// радиус, что и у кнопок формы, чтобы элементы управления выглядели единообразно.
-.form-control{
-  border-radius: 6px;
-}
-
-// Строка с галочкой. Flex нужен не для красоты: при длинной подписи (а на
-// мобильной ширине она занимает две строки) обычный inline-чекбокс отрывается
-// от текста и уезжает на строку выше. Сам чекбокс увеличен — по умолчанию он
-// около 13px, и попасть по нему пальцем тяжело.
-.checkbox-container{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  input[type="checkbox"]{
-    flex: 0 0 auto;
-    width: 20px;
-    height: 20px;
-    margin: 0;
-    cursor: pointer;
-
-    @include media(medium down){
-      width: 24px;
-      height: 24px;
-    }
+// .form-control — класс шаблона aspro-allcorp2, а не только формы, поэтому
+// правила ограничены её контейнерами (см. пояснение в base/button.scss).
+#app,
+#modals-container{
+  // Поля ввода приходят из шаблона с прямыми углами — скругляем под тот же
+  // радиус, что и у кнопок, чтобы элементы управления выглядели единообразно.
+  .form-control{
+    border-radius: 6px;
   }
 
-  label{
-    margin: 0;
-    font-weight: normal;
-    cursor: pointer;
+  // Строка с галочкой. Flex нужен не для красоты: при длинной подписи (а на
+  // мобильной ширине она занимает две строки) обычный inline-чекбокс отрывается
+  // от текста и уезжает на строку выше. Сам чекбокс увеличен — по умолчанию он
+  // около 13px, и попасть по нему пальцем тяжело.
+  .checkbox-container{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    input[type="checkbox"]{
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      cursor: pointer;
+
+      @include media(medium down){
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    label{
+      margin: 0;
+      font-weight: normal;
+      cursor: pointer;
+    }
   }
 }
 
