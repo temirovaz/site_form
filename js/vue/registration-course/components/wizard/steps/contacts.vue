@@ -8,14 +8,6 @@
       </form>
     </ValidationObserver>
 
-    <div class="checkbox-container">
-      <input type="checkbox" id="decline-application" v-model="declineApplication">
-      <label for="decline-application">Не хочу оформлять заявку — свяжитесь со мной и заполните её за меня</label>
-    </div>
-    <div v-if="declineApplication" class="decline-hint">
-      Укажите эл. почту — на неё придёт подтверждение заявки. Телефон по желанию, остальное менеджер заполнит вместе с вами.
-    </div>
-
     <!-- Чек-бокс политики обработки персональных данных -->
     <div class="checkbox-container">
       <input type="checkbox" id="privacy-policy" v-model="privacyPolicyAccepted">
@@ -25,6 +17,14 @@
     </div>
     <div v-if="showPrivacyPolicyError" class="error-message">
       Необходимо принять политику
+    </div>
+
+    <div class="checkbox-container">
+      <input type="checkbox" id="decline-application" v-model="declineApplication">
+      <label for="decline-application">Не хочу оформлять заявку — свяжитесь со мной и заполните её за меня</label>
+    </div>
+    <div v-if="declineApplication" class="decline-hint">
+      Укажите эл. почту — на неё придёт подтверждение заявки. Телефон по желанию, остальное менеджер заполнит вместе с вами.
     </div>
 
     <div class="row" v-if="isDeclineSubmit">
