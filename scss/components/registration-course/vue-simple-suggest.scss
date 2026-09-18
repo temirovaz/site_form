@@ -2,12 +2,17 @@
 .vue-simple-suggest.designed .input-wrapper input {
   border: 1px solid #e8e8e8;
   background: #fbfbfb;
+  // Библиотека задаёт свои 3px более специфичным селектором — переопределяем,
+  // чтобы поле подсказок не отличалось от остальных полей формы.
+  border-radius: 6px;
   .has-error & {
     border-color: #b94a48;
   }
 }
 .vue-simple-suggest.designed .suggestions{
   padding: 20px 10px;
+  border-radius: 6px;
+  border-color: #b3b3b3;
 }
 
 .vue-simple-suggest.designed .suggestions .suggest-item {
@@ -18,7 +23,16 @@
     content: none;
   }
 }
+// Наведение мышью — лёгкая серая подсветка; выбор с клавиатуры — заливка того же
+// тона, что и выбранный пункт переключателя плательщика. Библиотека красит оба
+// состояния в синий через !important, поэтому перебиваем так же.
 .vue-simple-suggest.designed .suggestions .suggest-item.hover {
-  background-color: #881812 !important;
-  color: #fff !important;
+  background-color: #ededed !important;
+  color: inherit !important;
+  border-radius: 4px;
+}
+.vue-simple-suggest.designed .suggestions .suggest-item.selected {
+  background-color: #6e6e6e;
+  color: #fff;
+  border-radius: 4px;
 }
