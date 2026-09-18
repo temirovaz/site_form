@@ -106,6 +106,7 @@ describe('ApiLikeyService.getListenerBySnilsFrom1C', () => {
 
 describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
     const DECLINE_COMMENT = 'Заявка создана на сайте. Клиент отказался заполнять данные.';
+    const ORGANIZATION_NAME = 'Клиент с сайта без данных';
 
     beforeEach(() => {
         mockLikeyPost.mockClear();
@@ -137,8 +138,20 @@ describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
 
         const payload = payloadOfLastCall();
         expect(payload.data.bank).toEqual({});
-        expect(payload.data.payment.inn).toBe('2311128737');
-        expect(payload.data.payment.full_name).toBe('Клиент с сайта без данных');
+        // toEqual, а не toMatchObject: если реальный payment однажды подмешают
+        // сюда спредом, тест должен покраснеть, а не пропустить это молча.
+        expect(payload.data.payment).toEqual({
+            type: 'legal',
+            organization_type: 1,
+            inn: '2311128737',
+            kpp: '231101001',
+            full_name: ORGANIZATION_NAME,
+            abbreviated_name: ORGANIZATION_NAME,
+            name_short: ORGANIZATION_NAME,
+            name_full_with_opf: ORGANIZATION_NAME,
+            telephone: '+79123456789',
+            email: 'test@example.com',
+        });
         expect(payload.programs).toHaveLength(1);
         expect(payload.programs[0].name).toBe('Не указано');
     });
@@ -161,10 +174,25 @@ describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
             organization_type: 1,
             inn: '2311128737',
             kpp: '231101001',
-            full_name: 'Клиент с сайта без данных',
-            abbreviated_name: 'Клиент с сайта без данных',
+            full_name: ORGANIZATION_NAME,
+            abbreviated_name: ORGANIZATION_NAME,
             telephone: '+79123456789',
             email: 'test@example.com',
+        });
+    });
+
+    it('дублирует наименование организации именами полей из рабочего потока формы', async () => {
+        // Обычный (не-decline) путь шлёт наименование как name_short/name_full_with_opf
+        // (см. payment-form/legal-form.vue) — имён full_name/abbreviated_name из
+        // API 3.0.docx в нём нет вообще. Какой из двух наборов реально читает 1С
+        // на algorithm: 2, мы не знаем, а заявка теперь создаётся с 200 в любом
+        // случае: потерянное наименование никто не заметит, кроме как сверяя
+        // карточку в 1С руками. Поэтому шлём оба набора.
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        expect(payloadOfLastCall().data.payment).toMatchObject({
+            name_short: ORGANIZATION_NAME,
+            name_full_with_opf: ORGANIZATION_NAME,
         });
     });
 
@@ -182,13 +210,16 @@ describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
     });
 
     it('подставляет телефон и почту организации, если контактов нет вовсе', async () => {
+        // Через интерфейс это состояние недостижимо: кнопка «Отправить» в режиме
+        // отказа появляется только когда есть хотя бы один контакт (isDeclineSubmit
+        // в contacts.vue). Тест — защита от будущих изменений этого условия.
         mockStore.state.form = {contact: {}};
 
         await ApiLikeyService.sendDeclineRequestTo1C();
 
         expect(payloadOfLastCall().data.payment).toMatchObject({
             telephone: '+70000000000',
-            email: 'noreply@company.ru',
+            email: 'noreply@likey.su',
         });
     });
 
@@ -202,12 +233,20 @@ describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
 
         expect(program).toMatchObject({name: 'Не указано', prefix: 'Не указано'});
         expect(program.listeners).toHaveLength(1);
-        expect(program.listeners[0]).toMatchObject({
+        // toEqual: контактов конкретного человека в абитуриенте быть не должно.
+        // Абитуриент у всех отказов один и тот же (фиксированный СНИЛС), а СНИЛС
+        // для 1С — ключ поиска студента (см. getListenerBySnilsFrom1C). Положив
+        // сюда живые телефон и почту, мы бы перезаписывали на одной фиктивной
+        // карточке контакты разных людей — менеджер видел бы там чужие данные.
+        // Реальные контакты уходят в data.contact и в организацию.
+        expect(program.listeners[0]).toEqual({
+            id: 'decline-applicant',
             surname: 'Иванов',
             name: 'Иван',
             patronymic: 'Иванович',
             fio: 'Иванов Иван Иванович',
             snils: '92703662611',
+            post: '',
         });
     });
 
@@ -235,5 +274,22 @@ describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
         await ApiLikeyService.sendDeclineRequestTo1C();
 
         expect(payloadOfLastCall().data.comment).toBe(DECLINE_COMMENT);
+    });
+
+    it('не мутирует store.state.form', async () => {
+        // sendFormForSaveTo1C мутирует форму через delete при маппинге в 1С, и
+        // повторная отправка идёт уже по изменённому объекту. Путь отказа так
+        // делать не должен: человек может снять галочку и пойти обычным путём.
+        mockStore.state.form = {
+            contact: {phone: '+79123456789', email: 'test@example.com'},
+            payment: {type: 'legal', inn: '2311128737', basis: 'Устав'},
+            bank: {bik: '044525225'},
+            comment: 'Перезвоните после 18:00',
+        };
+        const before = JSON.stringify(mockStore.state.form);
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        expect(JSON.stringify(mockStore.state.form)).toBe(before);
     });
 });

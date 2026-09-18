@@ -69,6 +69,12 @@ export default class ApiLikeyService {
     // а признаком «данные не введены» служат комментарий и наименование
     // организации «Клиент с сайта без данных», которые менеджер видит в 1С.
     //
+    // Наименование дублируется двумя наборами имён полей: full_name/
+    // abbreviated_name из API 3.0.docx и name_short/name_full_with_opf, которыми
+    // пользуется обычный путь формы. Докс и рабочий поток здесь расходятся, а
+    // заявка-отказ теперь создаётся с 200 при любом из них — если наименование
+    // не долетит, это не всплывёт ошибкой, только сверкой карточки в 1С руками.
+    //
     // organization_type кладём числом явно: в сторе type — строка
     // 'physical'/'legal'/'ip', а 1С ждёт число (1 — юрлицо, 2 — ИП). type
     // рядом оставлен 'legal', чтобы блок организации не противоречил сам себе:
@@ -82,6 +88,7 @@ export default class ApiLikeyService {
     static async sendDeclineRequestTo1C(){
         const form = store.state.form;
         const placeholder = 'Не указано';
+        const organizationName = 'Клиент с сайта без данных';
         // Фиксированный текст заказчика: по нему менеджер в 1С отличает заявку,
         // которую клиент не стал заполнять, от обычной. Комментарий самого
         // человека дописывается после него, а не вместо.
@@ -106,8 +113,12 @@ export default class ApiLikeyService {
                     patronymic: 'Иванович',
                     fio: 'Иванов Иван Иванович',
                     snils: '92703662611',
-                    phone: form.contact?.phone || '',
-                    email: form.contact?.email || '',
+                    // Телефон и почту человека сюда намеренно не кладём:
+                    // абитуриент у всех отказов один и тот же, а СНИЛС для 1С —
+                    // ключ поиска студента (см. getListenerBySnilsFrom1C), так
+                    // что контакты разных людей перезаписывали бы друг друга на
+                    // одной фиктивной карточке. Реальные контакты уходят в
+                    // data.contact и в организацию.
                     post: '',
                 }]
             }],
@@ -118,12 +129,19 @@ export default class ApiLikeyService {
                     organization_type: 1,
                     inn: '2311128737',
                     kpp: '231101001',
-                    full_name: 'Клиент с сайта без данных',
-                    abbreviated_name: 'Клиент с сайта без данных',
+                    full_name: organizationName,
+                    abbreviated_name: organizationName,
+                    // Те же имена полей, что шлёт обычный путь формы
+                    // (см. payment-form/legal-form.vue): какой из двух наборов
+                    // читает 1С на algorithm: 2 — неизвестно, а заявка теперь
+                    // создаётся с 200 в любом случае, и потерянное наименование
+                    // молча стоило бы менеджеру признака «данные не введены».
+                    name_short: organizationName,
+                    name_full_with_opf: organizationName,
                     // При отказе достаточно одного контакта из двух, а 1С требует
                     // у организации оба — недостающее закрываем заглушкой.
                     telephone: form.contact?.phone || '+70000000000',
-                    email: form.contact?.email || 'noreply@company.ru',
+                    email: form.contact?.email || 'noreply@likey.su',
                 },
                 bank: {},
                 comment: userComment ? `${declineComment} ${userComment}` : declineComment,
