@@ -53,6 +53,28 @@ export default class ApiLikeyService {
         })
     }
 
+    // Отправка заявки, которую человек не стал заполнять сам. Намеренно шлём не
+    // весь state.form, а только контакты и комментарий: к этому моменту в сторе
+    // могут лежать плательщик и программы, если человек успел уйти вперёд и
+    // вернуться. Тогда заявка внешне не отличалась бы от обычной и менеджер не
+    // узнал бы, что её нужно оформить за клиента. Пустые programs и payment.type
+    // здесь — и есть признак «нужно перезвонить».
+    static async sendDeclineRequestTo1C(){
+        const form = store.state.form;
+
+        return api.likey.post('/CreateData/3_00', {
+            type : 'application',
+            algorithm: 2,
+            programs: [],
+            data: {
+                contact: {...form.contact},
+                payment: {type: null},
+                bank: {},
+                comment: form.comment
+            }
+        })
+    }
+
     static async getListenerBySnilsFrom1C(snils){
         return api.likey.post('/GetData/3_00',{'document' : snils.trim(), 'type' : 'student'});
     }

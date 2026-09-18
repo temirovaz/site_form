@@ -103,3 +103,39 @@ describe('ApiLikeyService.getListenerBySnilsFrom1C', () => {
         });
     });
 });
+
+describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
+    beforeEach(() => {
+        mockLikeyPost.mockClear();
+    });
+
+    it('шлёт только контакты и комментарий, даже если человек успел заполнить плательщика и выбрать программы', async () => {
+        // Сценарий из ревью: заполнил контакты → ушёл вперёд → вернулся →
+        // поставил галочку отказа. В сторе уже лежат плательщик и программы.
+        mockStore.state.form = {
+            contact: {phone: '+79123456789', email: 'test@example.com'},
+            payment: {type: 'legal', inn: '2311128737', kpp: '231101001'},
+            bank: {bik: '044525225'},
+            comment: 'Перезвоните после 18:00',
+        };
+        mockGetSelectedProgram.mockReturnValue([{id: 1, prefix: 'PROG-01'}]);
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        const payload = payloadOfLastCall();
+        expect(payload.programs).toEqual([]);
+        expect(payload.data.payment).toEqual({type: null});
+        expect(payload.data.bank).toEqual({});
+        expect(payload.data.contact).toEqual({phone: '+79123456789', email: 'test@example.com'});
+        expect(payload.data.comment).toBe('Перезвоните после 18:00');
+    });
+
+    it('сохраняет форму запроса, ожидаемую 1С', async () => {
+        mockStore.state.form = {contact: {phone: '+79123456789', email: ''}};
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        expect(mockLikeyPost.mock.calls.at(-1)[0]).toBe('/CreateData/3_00');
+        expect(payloadOfLastCall()).toMatchObject({type: 'application', algorithm: 2});
+    });
+});
