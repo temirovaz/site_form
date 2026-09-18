@@ -2,12 +2,17 @@
 .vue-simple-suggest.designed .input-wrapper input {
   border: 1px solid #e8e8e8;
   background: #fbfbfb;
+  // Библиотека задаёт свои 3px более специфичным селектором — переопределяем,
+  // чтобы поле подсказок не отличалось от остальных полей формы.
+  border-radius: 6px;
   .has-error & {
     border-color: #b94a48;
   }
 }
 .vue-simple-suggest.designed .suggestions{
   padding: 20px 10px;
+  border-radius: 6px;
+  border-color: #b3b3b3;
 }
 
 .vue-simple-suggest.designed .suggestions .suggest-item {
@@ -18,7 +23,17 @@
     content: none;
   }
 }
+// .hover в этой библиотеке — курсор навигации: его ставит moveSelection при
+// нажатии стрелок, а не только мышь. Поэтому именно он красится контрастно, иначе
+// при управлении с клавиатуры не видно, на какой строке находишься. .selected —
+// ранее выбранное значение, ему достаточно лёгкой подсветки.
 .vue-simple-suggest.designed .suggestions .suggest-item.hover {
-  background-color: #881812 !important;
+  background-color: #6e6e6e !important;
   color: #fff !important;
+  border-radius: 4px;
+}
+.vue-simple-suggest.designed .suggestions .suggest-item.selected {
+  background-color: #ededed;
+  color: inherit;
+  border-radius: 4px;
 }

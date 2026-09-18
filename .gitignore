@@ -7,6 +7,9 @@ SETUP.md
 .claude/
 reports/
 
+# Локальная справочная документация (например, доки по API 1С) — не для git
+docs-local/
+
 # Локальный стенд и тесты
 node_modules/
 dist/
