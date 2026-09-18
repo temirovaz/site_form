@@ -4,7 +4,7 @@
     <ValidationObserver ref="form">
       <form>
         <FormField label="Телефон" name="phone" :rules="phoneRules" v-model="phone"  placeholder="+7(___)___-__-__" />
-        <SuggestionEmail label="Эл. почта" rules="required|email" v-model="email"></SuggestionEmail>
+        <SuggestionEmail label="Эл. почта" :rules="emailRules" v-model="email"></SuggestionEmail>
       </form>
     </ValidationObserver>
 
@@ -24,7 +24,10 @@
       <label for="decline-application">Не хочу оформлять заявку — свяжитесь со мной и заполните её за меня</label>
     </div>
     <div v-if="declineApplication" class="decline-hint">
-      Укажите эл. почту — на неё придёт подтверждение заявки. Телефон по желанию, остальное менеджер заполнит вместе с вами.
+      Оставьте телефон или эл. почту — остальное менеджер заполнит вместе с вами.
+    </div>
+    <div v-if="showContactRequiredError" class="error-message">
+      Укажите телефон или эл. почту, чтобы мы могли с вами связаться
     </div>
 
     <div class="row" v-if="isDeclineSubmit">
@@ -52,26 +55,33 @@ export default {
       declineApplication: false,
       privacyPolicyAccepted: false,
       showPrivacyPolicyError: false,
+      showContactRequiredError: false,
     }
   },
   computed: {
-    // Заявку отправляем прямо с этого шага, когда человек отказался заполнять её
-    // сам и оставил почту — заполнять остальные шаги за него будет менеджер.
-    isDeclineSubmit(){
-      return this.declineApplication && Boolean(this.email?.trim());
+    hasAnyContact(){
+      return Boolean(this.phone?.trim() || this.email?.trim());
     },
-    // Почта обязательна всегда: без неё заявке некуда уйти — подтверждение и
-    // дальнейшая переписка идут по почте. При отказе от заполнения необязательным
-    // становится только телефон.
+    // Заявку отправляем прямо с этого шага, когда человек отказался заполнять её
+    // сам и оставил способ связи — заполнять остальные шаги за него будет менеджер.
+    isDeclineSubmit(){
+      return this.declineApplication && this.hasAnyContact;
+    },
+    // При отказе достаточно одного контакта из двух, поэтому required снимается
+    // с обоих полей, а «хотя бы один» проверяется отдельно (см. validateStep).
     phoneRules(){
       return this.declineApplication ? '' : 'required';
+    },
+    emailRules(){
+      return this.declineApplication ? 'email' : 'required|email';
     }
   },
   watch: {
     isDeclineSubmit: {
       immediate: true,
       handler(value){
-        this.$store.commit('setDeclineApplication', value);
+        this.$store.commit('setCanSubmitAsDecline', value);
+        if(!value) this.$store.commit('clearComment');
       }
     },
     clickedNext: function(status) {
@@ -93,8 +103,16 @@ export default {
   methods: {
     validateStep(){
       this.showPrivacyPolicyError = false;
+      this.showContactRequiredError = false;
 
       return this.$refs.form.validate().then(success => {
+        // При отказе оба поля необязательны по отдельности, поэтому «хотя бы один
+        // контакт» проверяется здесь: иначе с ослабленными правилами можно было бы
+        // уйти на следующий шаг вообще без способа связи.
+        if(this.declineApplication && !this.hasAnyContact){
+          this.showContactRequiredError = true;
+          return false;
+        }
         if(!this.privacyPolicyAccepted){
           this.showPrivacyPolicyError = true;
           return false;
@@ -106,8 +124,13 @@ export default {
       });
     }
   },
-  beforeDestroy() {
-    this.$store.commit('setDeclineApplication', false);
+  // Шаг живёт под <keep-alive>, поэтому при уходе вперёд он деактивируется, а не
+  // разрушается — сбрасывать флаг нужно здесь, в beforeDestroy он бы не сработал.
+  deactivated() {
+    this.$store.commit('setCanSubmitAsDecline', false);
+  },
+  activated() {
+    this.$store.commit('setCanSubmitAsDecline', this.isDeclineSubmit);
   }
 }
 </script>

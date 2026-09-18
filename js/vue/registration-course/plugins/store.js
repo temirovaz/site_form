@@ -16,10 +16,11 @@ const store = new Vuex.Store({
         // после удаления слушателя из всех программ его можно было выбрать снова
         // через «Добавить слушателя», а не вводить те же данные заново.
         knownListeners: [],
-        // Пользователь отказался заполнять заявку сам и оставил контакты, чтобы
-        // менеджер связался и оформил её за него. Лежит вне form: это состояние
-        // интерфейса (каким показать футер мастера), а не поле заявки для 1С.
-        declineApplication: false,
+        // Человек отказался заполнять заявку сам И оставил контакт — то есть
+        // заявку уже можно отправить прямо с первого шага. Лежит вне form: это
+        // состояние интерфейса (каким показать футер мастера и какой payload
+        // собрать), а не поле заявки для 1С.
+        canSubmitAsDecline: false,
         form: {
             "contact": {
             },
@@ -52,8 +53,16 @@ const store = new Vuex.Store({
         storePrograms (state, payload){
             state.programs = payload;
         },
-        setDeclineApplication(state, value){
-            state.declineApplication = value;
+        setCanSubmitAsDecline(state, value){
+            state.canSubmitAsDecline = value;
+        },
+        // Комментарий из режима отказа не должен пережить снятие галочки: иначе
+        // после неудачной отправки человек снимает галочку, идёт обычным путём, а
+        // старый текст незаметно уезжает в 1С (saveCommentInSummaryStep не
+        // перезаписывает комментарий пустой строкой).
+        clearComment(state){
+            const {comment, ...rest} = state.form;
+            state.form = rest;
         },
         updateProgram(state, program){
             state.programs = state.programs.map((item) => {
