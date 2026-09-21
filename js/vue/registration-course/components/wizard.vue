@@ -8,14 +8,16 @@
       </div>
       <div class="wizard-finish-step" v-if="isFinish">
           <div class="wizard-finish-step__header">Спасибо. Ваша заявка принята</div>
-          <div class="wizard-finish-step__description">Мы уже начали работу на ней. После назначения ответственного, вам на электронную почту <b>{{ contactEmail }}</b> поступит уведомление.</div>
+          <div class="wizard-finish-step__description" v-if="contactEmail">Мы уже начали работу на ней. После назначения ответственного, вам на электронную почту <b>{{ contactEmail }}</b> поступит уведомление.</div>
+          <div class="wizard-finish-step__description" v-else-if="contactPhone">Мы уже начали работу на ней. После назначения ответственного мы свяжемся с вами по телефону <b>{{ contactPhone }}</b>.</div>
+          <div class="wizard-finish-step__description" v-else>Мы уже начали работу на ней. После назначения ответственного мы свяжемся с вами.</div>
       </div>
     </div>
     <div class="wizard-footer" v-if="!isFinish">
       <div class="wizard-footer__container" :style="navigationLocked ? {opacity: 0.6} : null">
         <button key="back" v-if="!isFirstStep" class="btn btn-default pull-left" :disabled="submitInProgress" @click="backClicked">Назад</button>
-        <button key="next" v-if="!isLastStep" class="btn btn-default pull-right" @click="nextStep">Далее</button>
-        <button key="submit" v-if="isLastStep" class="btn btn-default pull-right" :disabled="submitInProgress" @click="saveForm">Отправить</button>
+        <button key="next" v-if="!isSubmitStep" class="btn btn-default pull-right" @click="nextStep">Далее</button>
+        <button key="submit" v-if="isSubmitStep" class="btn btn-default pull-right" :disabled="submitInProgress" @click="saveForm">Отправить</button>
       </div>
     </div>
   </div>
@@ -65,11 +67,25 @@ export default {
     isLastStep(){
      return this.currentStep === this.steps.length - 1
     },
+    // Отправка «за меня заполнит менеджер» — человек на первом шаге отказался
+    // заполнять заявку и оставил контакты (см. wizard/steps/contacts.vue).
+    isDeclineSubmit(){
+      return this.isFirstStep && this.$store?.state?.canSubmitAsDecline === true;
+    },
+    // Кроме последнего шага, отправка возможна и с первого — в режиме отказа.
+    isSubmitStep(){
+      return this.isLastStep || this.isDeclineSubmit;
+    },
     component(){
       return this.steps[this.currentStep].component
     },
     contactEmail(){
       return this.$store?.state?.form?.contact?.email || '';
+    },
+    // В режиме отказа человек может оставить только телефон, тогда обещать
+    // уведомление на почту нельзя — экран благодарности говорит про звонок.
+    contactPhone(){
+      return this.$store?.state?.form?.contact?.phone || '';
     }
   },
 
@@ -132,7 +148,10 @@ export default {
       // пройти false→true ещё раз и отправить заявку дублем.
       if(event.status === true && !this.submitInProgress){
         this.submitInProgress = true;
-        ApiLikeyService.sendFormForSaveTo1C()
+        const send = this.isDeclineSubmit
+          ? ApiLikeyService.sendDeclineRequestTo1C()
+          : ApiLikeyService.sendFormForSaveTo1C();
+        send
           .then(() => {
             this.isFinish = true;
           })

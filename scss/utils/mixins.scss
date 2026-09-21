@@ -52,3 +52,78 @@ $breakpoints-hidpi: (
         $-zf-size: $old-zf-size !global;
     }
 }
+
+// Общий вид серой кнопки: скруглённые углы и мягкий вертикальный градиент.
+// Используется и кнопками навигации мастера, и переключателем типа плательщика,
+// чтобы они читались как один набор элементов управления.
+$pill-border: #b3b3b3;
+$pill-text: #3d3d3d;
+
+@mixin pill-gradient($from, $to) {
+    background: linear-gradient(180deg, $from 0%, $to 100%);
+}
+
+@mixin pill-button {
+    @include pill-gradient(#e6e6e6, #cdcdcd);
+    border: 1px solid $pill-border !important;
+    border-radius: 6px !important;
+    color: $pill-text !important;
+    font-weight: normal;
+    text-shadow: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
+    transition: background .2s ease, box-shadow .2s ease, border-color .2s ease;
+
+    &:hover,
+    &:focus {
+        @include pill-gradient(#ededed, #d5d5d5);
+        border-color: #a3a3a3 !important;
+        color: $pill-text !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 1px 3px rgba(0, 0, 0, .1);
+    }
+
+    &:active {
+        @include pill-gradient(#c6c6c6, #d8d8d8);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, .12);
+    }
+
+    &[disabled],
+    &[disabled]:hover {
+        @include pill-gradient(#e0e0e0, #d8d8d8);
+        color: #9a9a9a !important;
+        box-shadow: none;
+        cursor: default;
+    }
+}
+
+// Вариант для отменяющего действия («Удалить», «Отменить выбор»): та же
+// геометрия, но без заливки — чтобы рядом с «Выбрать» читалось как вторичное.
+@mixin pill-button-outline {
+    background: transparent;
+    border: 1px solid #b3b3b3;
+    border-radius: 6px;
+    color: #6e6e6e;
+    font-weight: normal;
+    text-shadow: none;
+    box-shadow: none;
+    transition: background .2s ease, border-color .2s ease, color .2s ease;
+
+    &:hover,
+    &:focus {
+        background: #ededed;
+        border-color: #9a9a9a;
+        color: #4a4a4a;
+    }
+
+    &:active {
+        background: #e0e0e0;
+    }
+}
+
+// Выбранное состояние — тот же силуэт, но более глубокий серый, чтобы выбор
+// читался без ухода от серой палитры.
+@mixin pill-button-selected {
+    @include pill-gradient(#828282, #626262);
+    border-color: #5c5c5c !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22);
+}
