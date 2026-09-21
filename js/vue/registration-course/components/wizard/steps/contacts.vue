@@ -3,11 +3,11 @@
     <h2>Контактная информация</h2>
     <ValidationObserver ref="form">
       <form>
-        <FormField label="Телефон" name="phone" rules="required" v-model="phone"  placeholder="+7(___)___-__-__" />
-        <SuggestionEmail label="Эл. почта" rules="required|email" v-model="email"></SuggestionEmail>
+        <FormField label="Телефон" name="phone" :rules="phoneRules" v-model="phone"  placeholder="+7(___)___-__-__" />
+        <SuggestionEmail label="Эл. почта" :rules="emailRules" v-model="email"></SuggestionEmail>
       </form>
     </ValidationObserver>
-    
+
     <!-- Чек-бокс политики обработки персональных данных -->
     <div class="checkbox-container">
       <input type="checkbox" id="privacy-policy" v-model="privacyPolicyAccepted">
@@ -18,42 +18,119 @@
     <div v-if="showPrivacyPolicyError" class="error-message">
       Необходимо принять политику
     </div>
+
+    <div class="checkbox-container">
+      <input type="checkbox" id="decline-application" v-model="declineApplication">
+      <label for="decline-application">Не хочу оформлять заявку — свяжитесь со мной и заполните её за меня</label>
+    </div>
+    <div v-if="declineApplication" class="decline-hint">
+      Оставьте телефон или эл. почту — остальное менеджер заполнит вместе с вами.
+    </div>
+    <div v-if="showContactRequiredError" class="error-message">
+      Укажите телефон или эл. почту, чтобы мы могли с вами связаться
+    </div>
+
+    <div class="row" v-if="isDeclineSubmit">
+      <div class="col-md-12">
+        <FormField name="comment" label="Комментарий" v-model.trim="comment" tag="textarea"/>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import DaDataSuggestion from "../../dadata-suggestion";
 import SuggestionEmail from "../../../components/suggestion/suggestion-email";
+import RegistrationCourseFormService from "../../../service/RegistrationCourseFormService";
 
 export default {
   name: 'wizard-step-contacts',
   components: {DaDataSuggestion, SuggestionEmail},
-  props: ['clickedNext'],
+  props: ['clickedNext', 'clickedFinish'],
   data: function () {
     return {
       phone: '',
       email: '',
+      comment: '',
+      declineApplication: false,
       privacyPolicyAccepted: false,
       showPrivacyPolicyError: false,
+      showContactRequiredError: false,
+    }
+  },
+  computed: {
+    hasAnyContact(){
+      return Boolean(this.phone?.trim() || this.email?.trim());
+    },
+    // Заявку отправляем прямо с этого шага, когда человек отказался заполнять её
+    // сам и оставил способ связи — заполнять остальные шаги за него будет менеджер.
+    isDeclineSubmit(){
+      return this.declineApplication && this.hasAnyContact;
+    },
+    // При отказе достаточно одного контакта из двух, поэтому required снимается
+    // с обоих полей, а «хотя бы один» проверяется отдельно (см. validateStep).
+    phoneRules(){
+      return this.declineApplication ? '' : 'required';
+    },
+    emailRules(){
+      return this.declineApplication ? 'email' : 'required|email';
     }
   },
   watch: {
+    isDeclineSubmit: {
+      immediate: true,
+      handler(value){
+        this.$store.commit('setCanSubmitAsDecline', value);
+        if(!value) this.$store.commit('clearComment');
+      }
+    },
     clickedNext: function(status) {
       if(status === true){
-        this.showPrivacyPolicyError = false;
-        this.$refs.form.validate().then(success => {
-          if (success && this.privacyPolicyAccepted) {
-            this.$store.commit('saveDataFormForStep', {contact : {email: this.email, phone: this.phone}})
-            this.$emit('can-continue', {status: true})
-          } else if (!this.privacyPolicyAccepted) {
-            this.showPrivacyPolicyError = true;
-            this.$emit('can-continue', {status: false})
-          } else {
-            this.$emit('can-continue', {status: false})
+        this.validateStep().then(success => this.$emit('can-continue', {status: success}));
+      }
+    },
+    clickedFinish: function(status) {
+      if(status === true){
+        this.validateStep().then(success => {
+          if(success){
+            RegistrationCourseFormService.saveCommentInSummaryStep(this.comment);
           }
+          this.$emit('can-finish', {status: success});
         });
       }
     }
+  },
+  methods: {
+    validateStep(){
+      this.showPrivacyPolicyError = false;
+      this.showContactRequiredError = false;
+
+      return this.$refs.form.validate().then(success => {
+        // При отказе оба поля необязательны по отдельности, поэтому «хотя бы один
+        // контакт» проверяется здесь: иначе с ослабленными правилами можно было бы
+        // уйти на следующий шаг вообще без способа связи.
+        if(this.declineApplication && !this.hasAnyContact){
+          this.showContactRequiredError = true;
+          return false;
+        }
+        if(!this.privacyPolicyAccepted){
+          this.showPrivacyPolicyError = true;
+          return false;
+        }
+        if(!success) return false;
+
+        this.$store.commit('saveDataFormForStep', {contact : {email: this.email, phone: this.phone}})
+        return true;
+      });
+    }
+  },
+  // Шаг живёт под <keep-alive>, поэтому при уходе вперёд он деактивируется, а не
+  // разрушается — сбрасывать флаг нужно здесь, в beforeDestroy он бы не сработал.
+  deactivated() {
+    this.$store.commit('setCanSubmitAsDecline', false);
+  },
+  activated() {
+    this.$store.commit('setCanSubmitAsDecline', this.isDeclineSubmit);
   }
 }
 </script>
@@ -65,5 +142,10 @@ export default {
 .error-message {
   color: red;
   margin-top: 5px;
+}
+.decline-hint {
+  margin-top: 5px;
+  color: #777;
+  font-size: 0.9em;
 }
 </style>

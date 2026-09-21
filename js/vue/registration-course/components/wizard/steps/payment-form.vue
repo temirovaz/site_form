@@ -16,6 +16,8 @@
       </div>
     </div>
 
+    <NoteLine v-if="!component">Выберите от кого будет заключаться договор</NoteLine>
+
     <template v-if="component">
       <keep-alive>
         <component v-bind:is="component" :clickedNext="clickedNext" @can-continue="canContinue"></component>
@@ -31,6 +33,7 @@
 import physicalForm from './payment-form/physical-form';
 import IPForm from './payment-form/ip-form';
 import legalForm from './payment-form/legal-form';
+import NoteLine from '../../note-line';
 import {sendNotifyError} from '../../../plugins/toast';
 
 export default {
@@ -38,7 +41,8 @@ export default {
   components: {
     physicalForm,
     IPForm,
-    legalForm
+    legalForm,
+    NoteLine
   },
   props: ['clickedNext'],
   data: function () {

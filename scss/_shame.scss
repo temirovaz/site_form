@@ -5,17 +5,21 @@
 }
 .btn.btn-default {
   margin: 0 !important;
+  // Рамку здесь не задаём: её перебивает !important из pill-button (base/button.scss),
+  // правило было бы мёртвым.
   &.-animation{
     animation: radial-pulse 1.5s infinite;
-    border: 1px solid #881812;
   }
 }
 
 .btn.btn-grey-outline {
   margin: 0 !important;
+  // !important оставлен сознательно: он гасит фон шаблонного каскада, но заодно
+  // перебивает собственные hover/active-фоны из pill-button-outline (mixins.scss) —
+  // у контурной кнопки на наведении меняются только рамка и цвет текста.
+  // Это принятое решение, а не недосмотр. Снимать только вместе с проверкой
+  // кнопки «Удалить» в модалке выбора программы на dev.likey.su.
   background: 0 0!important;
-  border: 1px solid #bbb!important;
-  color: #bbb!important;
   &.-animation{
     animation: radial-pulse 1.5s infinite;
     border: 1px solid #bbb;
@@ -27,7 +31,7 @@
 
 @keyframes radial-pulse {
   0% {
-    box-shadow: 0 0 0 2px #88181299;
+    box-shadow: 0 0 0 2px #8a8a8a99;
   }
 
   100% {
