@@ -3,6 +3,13 @@ import {api} from "../../plugins/api";
 import programService from '../ProgramService';
 import ListenerModel from "../../model/ListenerModel";
 
+// Заглушки для заявки-отказа: 1С не принимает заявку с пустыми телефоном и
+// почтой, а человек в этом режиме оставляет только один контакт из двух.
+// Значения намеренно нерабочие и заметные — менеджер должен видеть, что это
+// не контакт клиента (настоящий указан в соседнем поле и в комментарии).
+const PHONE_PLACEHOLDER = '+70000000000';
+const EMAIL_PLACEHOLDER = 'noreply@likey.su';
+
 export default class ApiLikeyService {
 
     static async sendFormForSaveTo1C(){
@@ -69,6 +76,12 @@ export default class ApiLikeyService {
     // а признаком «данные не введены» служат комментарий и наименование
     // организации «Клиент с сайта без данных», которые менеджер видит в 1С.
     //
+    // То же касается блока contact: заявка с одним только телефоном падала на
+    // живой 1С («Не удалось отправить заявку» в интерфейсе), потому что почта
+    // уходила пустой строкой — заглушки стояли лишь у организации. Теперь оба
+    // поля закрыты в обоих блоках, а какой контакт настоящий, видно из
+    // комментария.
+    //
     // Наименование дублируется двумя наборами имён полей: full_name/
     // abbreviated_name из API 3.0.docx и name_short/name_full_with_opf, которыми
     // пользуется обычный путь формы. Докс и рабочий поток здесь расходятся, а
@@ -94,6 +107,19 @@ export default class ApiLikeyService {
         // человека дописывается после него, а не вместо.
         const declineComment = 'Заявка создана на сайте. Клиент отказался заполнять данные.';
         const userComment = form.comment?.trim();
+
+        // При отказе человек оставляет телефон ИЛИ почту, а 1С требует оба поля
+        // заполненными и отвергает заявку целиком. Недостающее закрываем теми же
+        // заглушками, что и у организации.
+        const phone = form.contact?.phone?.trim();
+        const email = form.contact?.email?.trim();
+        const contactPhone = phone || PHONE_PLACEHOLDER;
+        const contactEmail = email || EMAIL_PLACEHOLDER;
+        // Менеджеру важно не перепутать заглушку с настоящим контактом: писать на
+        // noreply@likey.su бессмысленно, а звонить на +7 000... некуда.
+        const channelNote = phone && email
+            ? ''
+            : ` Связь только по ${phone ? 'телефону' : 'эл. почте'} — второй контакт клиент не оставил.`;
 
         return api.likey.post('/CreateData/3_00', {
             type : 'application',
@@ -123,7 +149,7 @@ export default class ApiLikeyService {
                 }]
             }],
             data: {
-                contact: {...form.contact},
+                contact: {...form.contact, phone: contactPhone, email: contactEmail},
                 payment: {
                     type: 'legal',
                     organization_type: 1,
@@ -138,13 +164,11 @@ export default class ApiLikeyService {
                     // молча стоило бы менеджеру признака «данные не введены».
                     name_short: organizationName,
                     name_full_with_opf: organizationName,
-                    // При отказе достаточно одного контакта из двух, а 1С требует
-                    // у организации оба — недостающее закрываем заглушкой.
-                    telephone: form.contact?.phone || '+70000000000',
-                    email: form.contact?.email || 'noreply@likey.su',
+                    telephone: contactPhone,
+                    email: contactEmail,
                 },
                 bank: {},
-                comment: userComment ? `${declineComment} ${userComment}` : declineComment,
+                comment: (userComment ? `${declineComment} ${userComment}` : declineComment) + channelNote,
             }
         })
     }
