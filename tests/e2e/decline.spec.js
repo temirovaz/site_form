@@ -14,6 +14,11 @@ const EMAIL = 'ivanov@example.com';
 const PHONE_PLACEHOLDER = '+70000000000';
 const EMAIL_PLACEHOLDER = 'noreply@likey.su';
 
+// Комментарий: системные куски рядом, текст клиента подписан и идёт последним.
+const DECLINE_COMMENT = 'Заявка создана на сайте. Клиент отказался заполнять данные.';
+const PHONE_ONLY_NOTE = 'Связь только по телефону — почта в заявке заглушка.';
+const EMAIL_ONLY_NOTE = 'Связь только по эл. почте — телефон в заявке заглушка.';
+
 // Заглушка стенда логирует payload в консоль (`[mock] отправка заявки в 1С`),
 // вторым аргументом — сам объект. Забираем его оттуда, а не из сети: запрос
 // никуда не уходит, мок вызывается напрямую.
@@ -72,8 +77,8 @@ test.describe('заявка-отказ: заглушки контактов', ()
         expect(data.contact.email).toBe(EMAIL_PLACEHOLDER);
         expect(data.payment.telephone).toBe(PHONE_IN_FORM);
         expect(data.payment.email).toBe(EMAIL_PLACEHOLDER);
-        expect(data.comment).toContain('Перезвоните после 18:00');
-        expect(data.comment).toContain('Связь только по телефону');
+        expect(data.comment)
+            .toBe(`${DECLINE_COMMENT} ${PHONE_ONLY_NOTE} Комментарий клиента: Перезвоните после 18:00`);
 
         // Заглушка не должна протечь на экран благодарности.
         const thanks = page.locator('.wizard-finish-step');
@@ -92,8 +97,8 @@ test.describe('заявка-отказ: заглушки контактов', ()
         expect(data.contact.phone).toBe(PHONE_PLACEHOLDER);
         expect(data.payment.email).toBe(EMAIL);
         expect(data.payment.telephone).toBe(PHONE_PLACEHOLDER);
-        expect(data.comment).toContain('Напишите на почту');
-        expect(data.comment).toContain('Связь только по эл. почте');
+        expect(data.comment)
+            .toBe(`${DECLINE_COMMENT} ${EMAIL_ONLY_NOTE} Комментарий клиента: Напишите на почту`);
 
         const thanks = page.locator('.wizard-finish-step');
         await expect(thanks).toContainText(EMAIL);
@@ -110,8 +115,8 @@ test.describe('заявка-отказ: заглушки контактов', ()
         expect(data.contact).toEqual({phone: PHONE_IN_FORM, email: EMAIL});
         expect(data.payment.telephone).toBe(PHONE_IN_FORM);
         expect(data.payment.email).toBe(EMAIL);
-        expect(data.comment).toContain('Любой канал');
-        expect(data.comment).not.toContain('Связь только по');
+        expect(data.comment).toBe(`${DECLINE_COMMENT} Комментарий клиента: Любой канал`);
+        expect(data.comment).not.toContain('заглушка');
     });
 
     test('без контактов отправить отказ нельзя', async ({page}) => {

@@ -116,10 +116,20 @@ export default class ApiLikeyService {
         const contactPhone = phone || PHONE_PLACEHOLDER;
         const contactEmail = email || EMAIL_PLACEHOLDER;
         // Менеджеру важно не перепутать заглушку с настоящим контактом: писать на
-        // noreply@likey.su бессмысленно, а звонить на +7 000... некуда.
-        const channelNote = phone && email
-            ? ''
-            : ` Связь только по ${phone ? 'телефону' : 'эл. почте'} — второй контакт клиент не оставил.`;
+        // noreply@likey.su бессмысленно, а звонить на +7 000... некуда. Пометка
+        // прямо называет заглушку и идёт перед текстом клиента: в хвосте длинного
+        // комментария она терялась и читалась как продолжение фразы клиента.
+        // Случай «нет ни одного контакта» через интерфейс недостижим
+        // (isDeclineSubmit в contacts.vue), но и врать про канал связи в нём
+        // нельзя: заглушки там обе.
+        let channelNote = '';
+        if (phone && !email) {
+            channelNote = 'Связь только по телефону — почта в заявке заглушка.';
+        } else if (email && !phone) {
+            channelNote = 'Связь только по эл. почте — телефон в заявке заглушка.';
+        } else if (!phone && !email) {
+            channelNote = 'Клиент не оставил ни телефона, ни почты — оба контакта в заявке заглушки.';
+        }
 
         return api.likey.post('/CreateData/3_00', {
             type : 'application',
@@ -168,7 +178,15 @@ export default class ApiLikeyService {
                     email: contactEmail,
                 },
                 bank: {},
-                comment: (userComment ? `${declineComment} ${userComment}` : declineComment) + channelNote,
+                // Системные куски рядом, текст клиента отделён и подписан —
+                // иначе он читается как продолжение системной фразы.
+                // filter(Boolean) убирает лишние пробелы, когда пометки или
+                // комментария клиента нет.
+                comment: [
+                    declineComment,
+                    channelNote,
+                    userComment ? `Комментарий клиента: ${userComment}` : '',
+                ].filter(Boolean).join(' '),
             }
         })
     }
