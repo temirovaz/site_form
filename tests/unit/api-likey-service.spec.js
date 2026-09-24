@@ -350,4 +350,32 @@ describe('ApiLikeyService.sendDeclineRequestTo1C — заглушки конта
         expect(data.comment).toContain('Перезвоните после 18:00');
         expect(data.comment).toContain('Связь только по телефону');
     });
+
+    // Тест на мутацию выше проверяет форму с двумя заполненными контактами —
+    // то есть ветку, где заглушки не подставляются вообще. Подстановка идёт как
+    // раз по неполному контакту, и именно там легко случайно записать заглушку
+    // в store: экран благодарности читает form.contact и пообещал бы человеку
+    // письмо на noreply@likey.su. Поэтому проверяем неполный контакт отдельно.
+    it('не записывает заглушки в store.state.form при неполном контакте', async () => {
+        mockStore.state.form = {contact: {phone: '+79991234567', email: ''}};
+        const before = JSON.stringify(mockStore.state.form);
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        expect(JSON.stringify(mockStore.state.form)).toBe(before);
+        expect(mockStore.state.form.contact.email).toBe('');
+    });
+
+    // Пробелы в поле не должны считаться контактом: иначе пометка о канале
+    // связи укажет на канал, которого нет, а в 1С уйдёт строка из пробелов.
+    it('считает контакт из одних пробелов пустым', async () => {
+        mockStore.state.form = {contact: {phone: '   ', email: 'test@example.com'}};
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        const {data} = payloadOfLastCall();
+        expect(data.contact.phone).toBe('+70000000000');
+        expect(data.payment.telephone).toBe('+70000000000');
+        expect(data.comment).toContain('Связь только по эл. почте');
+    });
 });
