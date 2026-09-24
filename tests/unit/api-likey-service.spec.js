@@ -21,6 +21,13 @@ const {default: ApiLikeyService} = await import(
 
 const payloadOfLastCall = () => mockLikeyPost.mock.calls.at(-1)[1];
 
+// Комментарий заявки-отказа собирается из трёх кусков: фиксированный текст,
+// пометка о заглушке и подписанный текст клиента — в этом порядке.
+const DECLINE_COMMENT = 'Заявка создана на сайте. Клиент отказался заполнять данные.';
+const PHONE_ONLY_NOTE = 'Связь только по телефону — почта в заявке заглушка.';
+const EMAIL_ONLY_NOTE = 'Связь только по эл. почте — телефон в заявке заглушка.';
+const NO_CONTACTS_NOTE = 'Клиент не оставил ни телефона, ни почты — оба контакта в заявке заглушки.';
+
 describe('ApiLikeyService.sendFormForSaveTo1C', () => {
     beforeEach(() => {
         mockLikeyPost.mockClear();
@@ -105,7 +112,6 @@ describe('ApiLikeyService.getListenerBySnilsFrom1C', () => {
 });
 
 describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
-    const DECLINE_COMMENT = 'Заявка создана на сайте. Клиент отказался заполнять данные.';
     const ORGANIZATION_NAME = 'Клиент с сайта без данных';
 
     beforeEach(() => {
@@ -256,20 +262,26 @@ describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
         expect(payloadOfLastCall().data.comment).toBe(DECLINE_COMMENT);
     });
 
-    it('дописывает комментарий человека после фиксированного текста', async () => {
+    it('дописывает подписанный комментарий человека после фиксированного текста', async () => {
+        // Оба контакта заполнены намеренно: при одном контакте между текстами
+        // встаёт пометка о заглушке (см. тесты заглушек), и точное сравнение
+        // здесь перестало бы проверять то, ради чего тест написан.
         mockStore.state.form = {
-            contact: {phone: '+79123456789'},
+            contact: {phone: '+79123456789', email: 'test@example.com'},
             comment: 'Перезвоните после 18:00',
         };
 
         await ApiLikeyService.sendDeclineRequestTo1C();
 
         expect(payloadOfLastCall().data.comment)
-            .toBe(`${DECLINE_COMMENT} Перезвоните после 18:00`);
+            .toBe(`${DECLINE_COMMENT} Комментарий клиента: Перезвоните после 18:00`);
     });
 
     it('не оставляет хвост из пробелов, если комментарий человека пустой', async () => {
-        mockStore.state.form = {contact: {phone: '+79123456789'}, comment: '   '};
+        mockStore.state.form = {
+            contact: {phone: '+79123456789', email: 'test@example.com'},
+            comment: '   ',
+        };
 
         await ApiLikeyService.sendDeclineRequestTo1C();
 
@@ -291,5 +303,108 @@ describe('ApiLikeyService.sendDeclineRequestTo1C', () => {
         await ApiLikeyService.sendDeclineRequestTo1C();
 
         expect(JSON.stringify(mockStore.state.form)).toBe(before);
+    });
+});
+
+describe('ApiLikeyService.sendDeclineRequestTo1C — заглушки контактов', () => {
+    beforeEach(() => {
+        mockLikeyPost.mockClear();
+    });
+
+    it('подставляет почту-заглушку, когда человек оставил только телефон', async () => {
+        // Регресс: на живой 1С такая заявка падала с «Не удалось отправить
+        // заявку» — почта уходила пустой строкой, а 1С требует оба контакта.
+        mockStore.state.form = {contact: {phone: '+79991234567', email: ''}};
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        const {data} = payloadOfLastCall();
+        expect(data.contact.phone).toBe('+79991234567');
+        expect(data.contact.email).toBe('noreply@likey.su');
+        expect(data.payment.telephone).toBe('+79991234567');
+        expect(data.payment.email).toBe('noreply@likey.su');
+    });
+
+    it('подставляет телефон-заглушку, когда человек оставил только почту', async () => {
+        mockStore.state.form = {contact: {phone: '', email: 'test@example.com'}};
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        const {data} = payloadOfLastCall();
+        expect(data.contact.email).toBe('test@example.com');
+        expect(data.contact.phone).toBe('+70000000000');
+        expect(data.payment.telephone).toBe('+70000000000');
+    });
+
+    it('не трогает контакты, когда человек оставил оба', async () => {
+        mockStore.state.form = {contact: {phone: '+79991234567', email: 'test@example.com'}};
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        const {data} = payloadOfLastCall();
+        expect(data.contact).toEqual({phone: '+79991234567', email: 'test@example.com'});
+        expect(data.comment).toBe(DECLINE_COMMENT);
+        expect(data.comment).not.toContain('заглушка');
+    });
+
+    it('ставит пометку о заглушке перед комментарием клиента, а не в хвост', async () => {
+        // Порядок здесь и есть предмет теста: пометка — единственное, что
+        // удерживает менеджера от письма на noreply@likey.su, и в хвосте
+        // длинного текста клиента она теряется. Текст клиента при этом подписан,
+        // чтобы не читался как продолжение системной фразы.
+        mockStore.state.form = {contact: {phone: '+79991234567', email: ''}, comment: 'Перезвоните после 18:00'};
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        const {data} = payloadOfLastCall();
+        expect(data.comment)
+            .toBe(`${DECLINE_COMMENT} ${PHONE_ONLY_NOTE} Комментарий клиента: Перезвоните после 18:00`);
+    });
+
+    it('не оставляет куска про комментарий клиента, когда тот ничего не написал', async () => {
+        mockStore.state.form = {contact: {phone: '', email: 'test@example.com'}};
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        expect(payloadOfLastCall().data.comment).toBe(`${DECLINE_COMMENT} ${EMAIL_ONLY_NOTE}`);
+    });
+
+    it('не врёт про канал связи, когда контактов нет вовсе', async () => {
+        // Через интерфейс недостижимо (isDeclineSubmit в contacts.vue требует
+        // хотя бы один контакт), но раньше эта ветка писала «Связь только по
+        // эл. почте», хотя почта — такая же заглушка, как и телефон.
+        mockStore.state.form = {contact: {}};
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        expect(payloadOfLastCall().data.comment).toBe(`${DECLINE_COMMENT} ${NO_CONTACTS_NOTE}`);
+    });
+
+    // Тест на мутацию выше проверяет форму с двумя заполненными контактами —
+    // то есть ветку, где заглушки не подставляются вообще. Подстановка идёт как
+    // раз по неполному контакту, и именно там легко случайно записать заглушку
+    // в store: экран благодарности читает form.contact и пообещал бы человеку
+    // письмо на noreply@likey.su. Поэтому проверяем неполный контакт отдельно.
+    it('не записывает заглушки в store.state.form при неполном контакте', async () => {
+        mockStore.state.form = {contact: {phone: '+79991234567', email: ''}};
+        const before = JSON.stringify(mockStore.state.form);
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        expect(JSON.stringify(mockStore.state.form)).toBe(before);
+        expect(mockStore.state.form.contact.email).toBe('');
+    });
+
+    // Пробелы в поле не должны считаться контактом: иначе пометка о канале
+    // связи укажет на канал, которого нет, а в 1С уйдёт строка из пробелов.
+    it('считает контакт из одних пробелов пустым', async () => {
+        mockStore.state.form = {contact: {phone: '   ', email: 'test@example.com'}};
+
+        await ApiLikeyService.sendDeclineRequestTo1C();
+
+        const {data} = payloadOfLastCall();
+        expect(data.contact.phone).toBe('+70000000000');
+        expect(data.payment.telephone).toBe('+70000000000');
+        expect(data.comment).toBe(`${DECLINE_COMMENT} ${EMAIL_ONLY_NOTE}`);
     });
 });
