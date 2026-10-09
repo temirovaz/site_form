@@ -1,6 +1,9 @@
 <template>
   <div>
-    <h2>Плательщик</h2>
+    <h2>
+      Плательщик
+      <span class="payment-form__title-hint">(на кого будет оформляться договор)</span>
+    </h2>
     <div class="radio-button">
       <div class="radio-button-item">
         <input id="radio-1" type="radio" name="payment" value="legal" v-model="payment">
@@ -75,3 +78,11 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.payment-form__title-hint {
+  color: #666;
+  font-size: 16px;
+  font-weight: normal;
+}
+</style>
