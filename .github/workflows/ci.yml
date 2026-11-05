@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # Корневой package.json и конфиги не лежат в git (см. dev-stand/README.md):
+      # генерируем их из dev-stand/templates/. Lockfile тоже вне git, поэтому npm install, а не npm ci.
+      - name: bootstrap dev-stand
+        run: node dev-stand/bootstrap.mjs
+      - name: install dependencies
+        run: npm install
+      - name: unit tests (vitest)
+        run: npm run test:unit
+      - name: install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: e2e tests (Playwright)
+        run: npm run test:e2e
+      - name: build (dev stand)
+        run: npx vite build
