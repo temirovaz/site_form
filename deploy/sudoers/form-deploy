@@ -1,0 +1,3 @@
+# CI deploy user for site_form dev stand. Installed by setup.sh as /etc/sudoers.d/form-deploy
+# after 'visudo -c'. One program, one command form; form-deploy re-validates the branch itself.
+form-deploy ALL=(root) NOPASSWD: /usr/local/sbin/form-deploy *
