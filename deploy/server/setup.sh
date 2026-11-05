@@ -9,9 +9,11 @@ export LC_ALL=C
 SRC="$(dirname "$0")"
 TPL="/home/bitrix/ext_www/dev.likey.su/local/templates/aspro-allcorp2"
 
-# 1. Deploy user (no password, no shell).
+# 1. Deploy user (no password). Shell is /bin/bash: sshd runs the forced command through the
+#    user's shell, so nologin would refuse ("This account is currently not available").
+#    The restrict,command=... key below means no shell is ever reachable anyway.
 if ! id form-deploy >/dev/null 2>&1; then
-  useradd --system --home-dir /var/lib/form-deploy --shell /usr/sbin/nologin form-deploy
+  useradd --system --home-dir /var/lib/form-deploy --shell /bin/bash form-deploy
 fi
 install -d -m 0700 -o form-deploy -g form-deploy /var/lib/form-deploy/.ssh
 
