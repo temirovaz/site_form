@@ -11,6 +11,11 @@ import ProgramModel from "../model/ProgramModel";
 const store = new Vuex.Store({
     state: {
         programs: [],
+        // Признаки загрузки списка программ: нужны, чтобы шаг «Программы» мог
+        // показать состояние загрузки и ошибку с кнопкой «Повторить», а не
+        // пустой экран, если запрос к сайту не удался.
+        programsLoading: false,
+        programsLoadError: false,
         // Слушатели, добавленные хотя бы раз за эту сессию заполнения заявки —
         // не зависит от того, в какой программе они сейчас числятся. Нужно, чтобы
         // после удаления слушателя из всех программ его можно было выбрать снова
@@ -33,6 +38,8 @@ const store = new Vuex.Store({
     actions: {
         loadPrograms(context){
             if(!context.state.programs.length){
+                context.commit('setProgramsLoading', true);
+                context.commit('setProgramsLoadError', false);
                 return api.likey.post('/GetData/3_00',{'type' : 'programs'},{headers : {}}).then(
                     (response) => {
                         const programs = [];
@@ -41,8 +48,12 @@ const store = new Vuex.Store({
                             programs.push(ProgramModel.fromObject(program))
                         })
                         store.commit('storePrograms', programs);
+                        store.commit('setProgramsLoading', false);
                     }
-                );
+                ).catch(() => {
+                    store.commit('setProgramsLoadError', true);
+                    store.commit('setProgramsLoading', false);
+                });
             }
         },
     },
@@ -52,6 +63,12 @@ const store = new Vuex.Store({
         },
         storePrograms (state, payload){
             state.programs = payload;
+        },
+        setProgramsLoading(state, value){
+            state.programsLoading = value;
+        },
+        setProgramsLoadError(state, value){
+            state.programsLoadError = value;
         },
         setCanSubmitAsDecline(state, value){
             state.canSubmitAsDecline = value;

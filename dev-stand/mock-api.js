@@ -68,6 +68,11 @@ async function likeyPost(url, payload) {
     await delay(300);
 
     if (url === '/GetData/3_00' && payload?.type === 'programs') {
+        // Отладка обработки ошибки на стенде: localStorage.mock_fail_programs = '1'
+        // заставляет запрос списка программ падать, пока флаг не снять.
+        if (localStorage.getItem('mock_fail_programs') === '1') {
+            throw new Error('[mock] сбой загрузки списка программ (mock_fail_programs)');
+        }
         return {data: {status: 'success', data: mockPrograms}};
     }
 
