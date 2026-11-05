@@ -2,7 +2,7 @@
 # Idempotent server setup for the site_form CI deploy (deploy/README.md).
 # Run as root on likey.su AFTER copying deploy/ to /tmp/site-form-deploy/deploy.
 # Creates the form-deploy user, installs the gate/wrapper/build script/sudoers, and the CI pub key.
-# Re-running is safe; never overwrites an existing authorized_keys entry without the pub key file.
+# Re-running is safe.
 set -euo pipefail
 export LC_ALL=C
 
@@ -26,10 +26,13 @@ visudo -cf "$SRC/../sudoers/form-deploy"
 install -m 0440 "$SRC/../sudoers/form-deploy" /etc/sudoers.d/form-deploy
 visudo -c
 
-# 4. Authorized key (from deploy/ssh/form-deploy.pub, added by the admin in step 1).
+# 4. Authorized key: raw pub key + forced command, so the CI key can ONLY run the gate.
 PUB="$SRC/../ssh/form-deploy.pub"
 if [ -s "$PUB" ]; then
-  install -m 0600 -o form-deploy -g form-deploy "$PUB" /var/lib/form-deploy/.ssh/authorized_keys
+  umask 077
+  { printf 'restrict,command="/usr/local/sbin/form-deploy-gate" '; cat "$PUB"; } > /var/lib/form-deploy/.ssh/authorized_keys
+  chown form-deploy:form-deploy /var/lib/form-deploy/.ssh/authorized_keys
+  chmod 0600 /var/lib/form-deploy/.ssh/authorized_keys
 else
   echo "warning: $PUB is empty or missing; add the CI pub key manually" >&2
 fi
