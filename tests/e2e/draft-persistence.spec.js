@@ -15,7 +15,7 @@ const DRAFT_KEY = 'site_form_draft_v1';
 const emailInput = (page) => page.locator('form input[type="text"], form input:not([type])').nth(1);
 
 test.describe('черновик заявки', () => {
-    test('контакты, согласие и режим отказа переживают перезагрузку', async ({page}) => {
+    test('контакты и режим отказа переживают перезагрузку, согласие — нет', async ({page}) => {
         await page.goto('/');
         await expect(page.locator('.wizard')).toBeVisible();
 
@@ -30,14 +30,15 @@ test.describe('черновик заявки', () => {
 
         await expect(page.getByPlaceholder('+7(___)___-__-__')).toHaveValue(PHONE_IN_FORM);
         await expect(emailInput(page)).toHaveValue(EMAIL);
-        await expect(page.locator('#privacy-policy')).toBeChecked();
+        // Согласие на политику в черновик не попадает — даётся заново.
+        await expect(page.locator('#privacy-policy')).not.toBeChecked();
         await expect(page.locator('#decline-application')).toBeChecked();
         // Режим отказа восстановился вместе с контактом — заявку можно отправить
         // прямо с первого шага, кнопка «Отправить» на месте.
         await expect(page.getByRole('button', {name: 'Отправить'})).toBeVisible();
     });
 
-    test('номер шага переживает перезагрузку', async ({page}) => {
+    test('после перезагрузки форма открывается с первого шага, согласие не восстановлено', async ({page}) => {
         await page.goto('/');
         await expect(page.locator('.wizard')).toBeVisible();
 
@@ -52,7 +53,12 @@ test.describe('черновик заявки', () => {
 
         await page.reload();
 
-        await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+        // Всегда первый шаг: иначе согласия, не восстановленные из черновика,
+        // можно было бы обойти, вернувшись сразу на поздний шаг.
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+        await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeHidden();
+        await expect(page.getByPlaceholder('+7(___)___-__-__')).toHaveValue(PHONE_IN_FORM);
+        await expect(page.locator('#privacy-policy')).not.toBeChecked();
     });
 
     test('после отправки заявки черновик очищается и форма начинается с чистого листа', async ({page}) => {
@@ -129,8 +135,23 @@ test.describe('черновик заявки', () => {
         await page.getByRole('dialog').getByRole('button', {name: 'Добавить слушателя'}).click();
         await expect(page.getByText('Иванов Иван Иванович')).toBeVisible();
 
-        // Перезагрузка на шаге программ: шаг, программа и слушатель должны вернуться.
+        // Перезагрузка на шаге программ: форма открывается с первого шага, согласия
+        // сброшены — проходим шаги заново (данные восстановлены из черновика),
+        // ставим согласия, и на шаге программ программа и слушатель на месте.
         await page.reload();
+
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+        await expect(page.locator('#privacy-policy')).not.toBeChecked();
+        await page.locator('#privacy-policy').check();
+        await page.getByRole('heading', {name: 'Контактная информация'}).click();
+        await page.getByRole('button', {name: 'Далее'}).click();
+
+        await expect(page.locator('#listeners-consent-legal')).not.toBeChecked();
+        await page.locator('#listeners-consent-legal').check();
+        await page.getByRole('button', {name: 'Далее'}).click();
+
+        await expect(page.getByRole('heading', {name: 'Банковские реквизиты'})).toBeVisible();
+        await page.getByRole('button', {name: 'Далее'}).click();
 
         await expect(page.getByRole('heading', {name: /добавьте программы обучения/})).toBeVisible();
         // Программа восстанавливается после асинхронной загрузки списка из 1С.

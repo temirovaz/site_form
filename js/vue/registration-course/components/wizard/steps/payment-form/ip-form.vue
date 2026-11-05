@@ -39,9 +39,10 @@ import {draftMixin} from "../../../../plugins/draft";
 export default {
   name: 'wizard-ip-form',
   components: {DaDataSuggestion},
-  // Черновик: введённые реквизиты и согласие переживают перезагрузку
-  // (см. plugins/draft.js).
-  mixins: [draftMixin('payerIp', ['fields', 'listenersConsentAccepted'])],
+  // Черновик: введённые реквизиты переживают перезагрузку (см. plugins/draft.js).
+  // Согласие слушателей (listenersConsentAccepted) в черновик НЕ попадает:
+  // после перезагрузки человек даёт его заново.
+  mixins: [draftMixin('payerIp', ['fields'])],
   props: ['clickedNext'],
   data: function () {
     return {

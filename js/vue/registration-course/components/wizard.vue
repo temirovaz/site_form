@@ -30,7 +30,7 @@ import stepBank from './wizard/steps/bank';
 import stemSummary from './wizard/steps/summary';
 import  {sendNotifyError} from '../plugins/toast';
 import ApiLikeyService from "../service/api/ApiLikeyService";
-import {disableDraft, loadDraftSection, saveDraftSection} from '../plugins/draft';
+import {disableDraft} from '../plugins/draft';
 
 export default {
   name: 'Wizard',
@@ -92,23 +92,6 @@ export default {
 
   beforeDestroy() {
     clearTimeout(this._navigationLockTimer);
-  },
-
-  created() {
-    // Возвращаем человека на шаг, на котором он был до перезагрузки. Только при
-    // наличии снапшота стора в черновике: без него черновик считаем пустым и
-    // начинаем с первого шага (иначе после чистки черновика или на новом
-    // устройстве форма открылась бы с середины).
-    const saved = loadDraftSection('wizard');
-    if(saved && Number.isInteger(saved.currentStep) && loadDraftSection('store')){
-      this.currentStep = Math.min(Math.max(saved.currentStep, 0), this.steps.length - 1);
-    }
-  },
-
-  watch: {
-    currentStep(value){
-      saveDraftSection('wizard', {currentStep: value});
-    },
   },
 
   methods: {
