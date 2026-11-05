@@ -1,0 +1,65 @@
+name: Deploy dev stand
+
+# On every push to a feature/fix branch (and manually with a branch). CI (ci.yml) also runs on the PR;
+# this workflow only builds the branch on the shared dev stand. One deploy at a time; never cancel one halfway.
+on:
+  push:
+    branches: ['feature/**', 'fix/**']
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy (feature/<slug> | fix/<slug> | dev)'
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: resolve branch
+        id: branch
+        env:
+          INPUT: ${{ github.event.inputs.branch }}
+        run: echo "branch=${INPUT:-${GITHUB_REF_NAME}}" >> "$GITHUB_OUTPUT"
+
+      - name: ssh access
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+        run: |
+          test -n "$DEPLOY_SSH_KEY" && test -n "$DEPLOY_KNOWN_HOSTS" && test -n "$DEPLOY_HOST" \
+            || { echo "::error::DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS or DEPLOY_HOST is not set (deploy/README.md)"; exit 1; }
+          install -d -m 0700 ~/.ssh
+          (umask 077; printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key)
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host devstand
+            HostName $DEPLOY_HOST
+            User form-deploy
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+          EOF
+          chmod 0600 ~/.ssh/config
+
+      - name: build branch on dev stand
+        env:
+          BRANCH: ${{ steps.branch.outputs.branch }}
+        run: ssh devstand "form-deploy build $BRANCH"
+
+      - name: remove key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
