@@ -35,9 +35,13 @@
 
 <script>
 import DaDataSuggestion from "../../../dadata-suggestion";
+import {draftMixin} from "../../../../plugins/draft";
 export default {
   name: 'wizard-ip-form',
   components: {DaDataSuggestion},
+  // Черновик: введённые реквизиты и согласие переживают перезагрузку
+  // (см. plugins/draft.js).
+  mixins: [draftMixin('payerIp', ['fields', 'listenersConsentAccepted'])],
   props: ['clickedNext'],
   data: function () {
     return {

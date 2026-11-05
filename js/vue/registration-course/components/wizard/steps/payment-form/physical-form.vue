@@ -41,9 +41,13 @@
 <script>
 import FormInput from "../../../form/form-input";
 import DaDataSuggestion from "../../../dadata-suggestion";
+import {draftMixin} from "../../../../plugins/draft";
 export default {
   name: 'wizard-physical-form',
   components: {FormInput, DaDataSuggestion},
+  // Черновик: паспортные данные и флаг «поля заполнены из 1С» переживают
+  // перезагрузку (см. plugins/draft.js).
+  mixins: [draftMixin('payerPhysical', ['fields', 'fieldsIsDisable'])],
   props: ['clickedNext'],
   data: function () {
     return {

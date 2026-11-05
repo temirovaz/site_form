@@ -39,10 +39,14 @@
 
 import FormField from "../../../form-field";
 import DaDataSuggestion from "../../../dadata-suggestion";
+import {draftMixin} from "../../../../plugins/draft";
 
 export default {
   name: 'wizard-legal-form',
   components: {DaDataSuggestion, FormField},
+  // Черновик: введённые реквизиты и согласие переживают перезагрузку
+  // (см. plugins/draft.js).
+  mixins: [draftMixin('payerLegal', ['fields', 'listenersConsentAccepted'])],
   props: ['clickedNext'],
   data: function () {
     return {

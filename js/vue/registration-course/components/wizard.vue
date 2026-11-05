@@ -30,6 +30,7 @@ import stepBank from './wizard/steps/bank';
 import stemSummary from './wizard/steps/summary';
 import  {sendNotifyError} from '../plugins/toast';
 import ApiLikeyService from "../service/api/ApiLikeyService";
+import {disableDraft, loadDraftSection, saveDraftSection} from '../plugins/draft';
 
 export default {
   name: 'Wizard',
@@ -93,6 +94,23 @@ export default {
     clearTimeout(this._navigationLockTimer);
   },
 
+  created() {
+    // Возвращаем человека на шаг, на котором он был до перезагрузки. Только при
+    // наличии снапшота стора в черновике: без него черновик считаем пустым и
+    // начинаем с первого шага (иначе после чистки черновика или на новом
+    // устройстве форма открылась бы с середины).
+    const saved = loadDraftSection('wizard');
+    if(saved && Number.isInteger(saved.currentStep) && loadDraftSection('store')){
+      this.currentStep = Math.min(Math.max(saved.currentStep, 0), this.steps.length - 1);
+    }
+  },
+
+  watch: {
+    currentStep(value){
+      saveDraftSection('wizard', {currentStep: value});
+    },
+  },
+
   methods: {
     // Сразу после перехода между шагами первый клик по любому интерактивному
     // элементу (кнопки «Назад»/«Далее»/«Отправить», но также и обычные кнопки
@@ -153,6 +171,12 @@ export default {
           : ApiLikeyService.sendFormForSaveTo1C();
         send
           .then(() => {
+            // Заявка принята — черновик больше не нужен: следующая заявка должна
+            // начинаться с чистого листа, а персональные данные не должны
+            // оставаться в браузере дольше, чем нужно для заполнения. Запись
+            // отключаем, иначе коммиты при размонтировании шагов создали бы
+            // черновик заново.
+            disableDraft();
             this.isFinish = true;
           })
           .catch(() => {

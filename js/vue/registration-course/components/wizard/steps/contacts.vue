@@ -42,10 +42,14 @@
 import DaDataSuggestion from "../../dadata-suggestion";
 import SuggestionEmail from "../../../components/suggestion/suggestion-email";
 import RegistrationCourseFormService from "../../../service/RegistrationCourseFormService";
+import {draftMixin} from "../../../plugins/draft";
 
 export default {
   name: 'wizard-step-contacts',
   components: {DaDataSuggestion, SuggestionEmail},
+  // Черновик: контакты, режим отказа и согласие на политику переживают
+  // перезагрузку страницы (см. plugins/draft.js).
+  mixins: [draftMixin('contacts', ['phone', 'email', 'comment', 'declineApplication', 'privacyPolicyAccepted'])],
   props: ['clickedNext', 'clickedFinish'],
   data: function () {
     return {
