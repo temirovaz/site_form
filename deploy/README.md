@@ -11,9 +11,9 @@ CI-деплой на **dev.likey.su** (ветку feature/fix/dev). Прод (li
 
 | Путь | Откуда | Зачем |
 |---|---|---|
-| /var/lib/form-deploy/ | setup.sh | домашний каталог CI-юзера (без shell) |
+| /var/lib/form-deploy/ | setup.sh | домашний каталог CI-юзера (shell /bin/bash — нужен для forced command) |
 | /var/lib/form-deploy/.ssh/authorized_keys | setup.sh + deploy/ssh/form-deploy.pub | restrict-ключ CI |
-| /usr/local/sbin/form-deploy-gate | server/form-deploy-gate | forced command, принимает только 'form-deploy build <branch>' |
+| /usr/local/sbin/form-deploy-gate | server/form-deploy-gate | forced command: 'form-deploy build <branch>' или 'form-deploy release' |
 | /usr/local/sbin/form-deploy | server/form-deploy | root-обёртка: валидирует ветку и запускает сборку от bitrix |
 | /etc/sudoers.d/form-deploy | sudoers/form-deploy | sudo только на /usr/local/sbin/form-deploy |
 | …/aspro-allcorp2/build-branch.sh | server/build-branch.sh | (от bitrix) лок → бэкап бандла → git fetch/checkout/pull → npm run build → проверка |
@@ -43,11 +43,24 @@ CI-деплой на **dev.likey.su** (ветку feature/fix/dev). Прод (li
 Команда вне списка — отказ:
 
     ssh -i ~/.ssh/form_deploy_ci form-deploy@likey.su id
-    # → only 'form-deploy build <branch>' is allowed
+    # → only 'form-deploy build <branch>' or 'form-deploy release' is allowed
 
 Валидная выкладка:
 
     ssh -i ~/.ssh/form_deploy_ci form-deploy@likey.su 'form-deploy build feature/example'
+
+Освободить стенд:
+
+    ssh -i ~/.ssh/form_deploy_ci form-deploy@likey.su 'form-deploy release'
+
+## Лок стенда
+
+Каждая выкладка занимает стенд (.dev-stand-lock, держится <3 ч). Пока лок свежий и принадлежит
+другой ветке, следующая выкладка падает с «dev-stand is locked by '<ветка>' (<3h)». Освободить:
+
+    ssh -i ~/.ssh/form_deploy_ci form-deploy@likey.su 'form-deploy release'
+
+или вручную с сервера: rm -f /home/bitrix/ext_www/dev.likey.su/local/templates/aspro-allcorp2/.dev-stand-lock.
 
 ## Откат
 
@@ -66,5 +79,5 @@ CI-деплой на **dev.likey.su** (ветку feature/fix/dev). Прод (li
 ## Смоук
 
 dev.likey.su снаружи отдаёт 403, поэтому смоук в workflow — только на сервере: build exit 0 +
-ls -la assets/js/application.js (дата/размер изменились). Живую проверку с реальной 1С делает человек
+sha256 бандла до/после сборки должен измениться (иначе — ошибка). Живую проверку с реальной 1С делает человек
 со своего IP/VPN (docs/likey/likey-infra.md).

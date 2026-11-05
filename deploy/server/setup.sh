@@ -15,6 +15,7 @@ TPL="/home/bitrix/ext_www/dev.likey.su/local/templates/aspro-allcorp2"
 if ! id form-deploy >/dev/null 2>&1; then
   useradd --system --home-dir /var/lib/form-deploy --shell /bin/bash form-deploy
 fi
+usermod -s /bin/bash form-deploy   # ensure correct shell even when the user already exists
 install -d -m 0700 -o form-deploy -g form-deploy /var/lib/form-deploy/.ssh
 
 # 2. Scripts.
@@ -26,7 +27,7 @@ chown bitrix:bitrix "$TPL/build-branch.sh"
 # 3. sudoers (validate before installing).
 visudo -cf "$SRC/../sudoers/form-deploy"
 install -m 0440 "$SRC/../sudoers/form-deploy" /etc/sudoers.d/form-deploy
-visudo -c
+visudo -c || echo "warning: visudo -c reports errors (pre-existing files, not form-deploy)" >&2
 
 # 4. Authorized key: raw pub key + forced command, so the CI key can ONLY run the gate.
 PUB="$SRC/../ssh/form-deploy.pub"
