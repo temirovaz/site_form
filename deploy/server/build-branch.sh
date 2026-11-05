@@ -33,16 +33,15 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
-# 3. Backup the current bundle before anything else; hash it for the smoke assert; rotate old .bak.
+# 3. Backup the current bundle before anything else; rotate old .bak.
 cp -p "$TPL/assets/js/application.js"  "$TPL/assets/js/application.js.$TS.bak"
 cp -p "$TPL/assets/css/application.css" "$TPL/assets/css/application.css.$TS.bak"
-js_before="$(sha256sum "$TPL/assets/js/application.js" | cut -d' ' -f1)"
-css_before="$(sha256sum "$TPL/assets/css/application.css" | cut -d' ' -f1)"
 ls -1t "$TPL/assets/js/application.js".*.bak  2>/dev/null | tail -n +6 | xargs -r rm -f
 ls -1t "$TPL/assets/css/application.css".*.bak 2>/dev/null | tail -n +6 | xargs -r rm -f
 
-# 4. Take the lock.
+# 4. Take the lock and mark the build start (to prove webpack rewrites the bundle).
 echo "$branch | form-deploy-ci | $(date -u +%FT%TZ)" > "$LOCK"
+touch "$TPL/.build-marker"
 
 # 5. Checkout the branch and build (same sequence as the manual flow).
 git fetch origin
@@ -51,12 +50,13 @@ git pull origin "$branch"
 cd "$TPL"
 npm run build
 
-# 6. Prove the bundle was rebuilt (hash changed), not a silent no-op.
-js_after="$(sha256sum "$TPL/assets/js/application.js" | cut -d' ' -f1)"
-css_after="$(sha256sum "$TPL/assets/css/application.css" | cut -d' ' -f1)"
+# 6. Prove the bundle was actually rebuilt (webpack rewrote it), not a silent no-op.
+js_new="$(find "$TPL/assets/js/application.js" -newer "$TPL/.build-marker" 2>/dev/null | head -1)"
+css_new="$(find "$TPL/assets/css/application.css" -newer "$TPL/.build-marker" 2>/dev/null | head -1)"
+rm -f "$TPL/.build-marker"
 ls -la "$TPL/assets/js/application.js" "$TPL/assets/css/application.css"
-if [ "$js_after" = "$js_before" ] && [ "$css_after" = "$css_before" ]; then
-  echo "error: bundle unchanged after build (js/css hash identical)" >&2
+if [ -z "$js_new" ] || [ -z "$css_new" ]; then
+  echo "error: bundle not rebuilt (webpack did not write it)" >&2
   exit 1
 fi
 echo "deployed $branch @ $(git -C "$RES" rev-parse --short HEAD)"
