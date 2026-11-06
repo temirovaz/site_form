@@ -25,10 +25,13 @@
 
 <script>
 import DaDataSuggestion from "../../dadata-suggestion";
+import {draftMixin} from "../../../plugins/draft";
 
 export default {
   name: 'wizard-step-bank',
   components: { DaDataSuggestion },
+  // Черновик: банковские реквизиты переживают перезагрузку (см. plugins/draft.js).
+  mixins: [draftMixin('bank', ['fields'])],
   props: ['clickedNext'],
   data: function () {
     return {

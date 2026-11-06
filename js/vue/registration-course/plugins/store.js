@@ -2,37 +2,52 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import { getField, updateField } from 'vuex-map-fields';
 import {api} from './api';
+import {loadDraftSection, saveDraftSection} from './draft';
 import programs from "../components/wizard/steps/programs";
 
 Vue.use(Vuex);
 
 import ProgramModel from "../model/ProgramModel";
 
+// Черновик заявки из sessionStorage (см. plugins/draft.js): при перезагрузке
+// страницы форма должна вернуться в то состояние, в котором её оставили.
+const draftStore = loadDraftSection('store') || {};
+
 const store = new Vuex.Store({
     state: {
         programs: [],
+        // Список программ загружен из 1С в этой сессии. До этого момента subscribe
+        // НЕ перезаписывает секцию programSelection черновика: иначе стартовые
+        // коммиты (например, setCanSubmitAsDecline из шага контактов) затирали бы
+        // сохранённый выбор пустым состоянием ещё до того, как loadPrograms
+        // успел его восстановить. Не персистится — это состояние сессии.
+        programsLoaded: false,
         // Слушатели, добавленные хотя бы раз за эту сессию заполнения заявки —
         // не зависит от того, в какой программе они сейчас числятся. Нужно, чтобы
         // после удаления слушателя из всех программ его можно было выбрать снова
         // через «Добавить слушателя», а не вводить те же данные заново.
-        knownListeners: [],
+        knownListeners: draftStore.knownListeners || [],
         // Человек отказался заполнять заявку сам И оставил контакт — то есть
         // заявку уже можно отправить прямо с первого шага. Лежит вне form: это
         // состояние интерфейса (каким показать футер мастера и какой payload
         // собрать), а не поле заявки для 1С.
-        canSubmitAsDecline: false,
+        canSubmitAsDecline: draftStore.canSubmitAsDecline || false,
         form: {
-            "contact": {
-            },
+            "contact": {},
             "payment": {
                 "type": null,
             },
-            "bank": {}
+            "bank": {},
+            ...(draftStore.form || {}),
         },
     },
     actions: {
         loadPrograms(context){
             if(!context.state.programs.length){
+                // Выбор из черновика читаем ДО коммита storePrograms: после него
+                // subscribe считает список загруженным и перезапишет секцию
+                // programSelection свежим (ещё пустым) состоянием.
+                const selection = loadDraftSection('programSelection');
                 return api.likey.post('/GetData/3_00',{'type' : 'programs'},{headers : {}}).then(
                     (response) => {
                         const programs = [];
@@ -41,6 +56,12 @@ const store = new Vuex.Store({
                             programs.push(ProgramModel.fromObject(program))
                         })
                         store.commit('storePrograms', programs);
+                        // Выбор программ и слушателей из черновика накатываем только
+                        // после загрузки свежего списка из 1С, а не из кеша — иначе
+                        // показали бы устаревшие программы.
+                        if(selection?.items?.length){
+                            store.commit('restoreProgramSelection', selection.items);
+                        }
                     }
                 );
             }
@@ -52,6 +73,19 @@ const store = new Vuex.Store({
         },
         storePrograms (state, payload){
             state.programs = payload;
+            state.programsLoaded = true;
+        },
+        // Выбор программ и их слушатели из черновика (sessionStorage) накатывается
+        // поверх свежего списка из 1С по id. Программа, которой уже нет в ответе
+        // 1С (снята с набора, переименована с новым id), молча пропускается.
+        restoreProgramSelection(state, items){
+            const savedById = new Map(items.map((item) => [item.id, item]));
+            state.programs = state.programs.map((program) => {
+                const saved = savedById.get(program.id);
+                return saved
+                    ? {...program, selected: true, listeners: saved.listeners || []}
+                    : program;
+            });
         },
         setCanSubmitAsDecline(state, value){
             state.canSubmitAsDecline = value;
@@ -133,6 +167,26 @@ const store = new Vuex.Store({
     },
 })
 
+
+// Каждый коммит обновляет черновик заявки в sessionStorage (запись отложенная,
+// см. plugins/draft.js). Черновик очищается после успешной отправки заявки
+// (wizard.vue → clearDraft).
+store.subscribe((mutation, state) => {
+    saveDraftSection('store', {
+        form: state.form,
+        knownListeners: state.knownListeners,
+        canSubmitAsDecline: state.canSubmitAsDecline,
+    });
+    // Выбор программ перезаписываем только когда список программ в этой сессии
+    // уже загружен из 1С — см. комментарий у programsLoaded в state.
+    if(state.programsLoaded){
+        saveDraftSection('programSelection', {
+            items: state.programs
+                .filter((program) => program.selected)
+                .map((program) => ({id: program.id, listeners: program.listeners || []})),
+        });
+    }
+});
 
 export default store;
 
