@@ -8,6 +8,8 @@ import {expect, test} from '@playwright/test';
 const PHONE = '9991234567';
 const PHONE_IN_FORM = '+7 (999)-123-45-67';
 const EMAIL = 'ivanov@example.com';
+const SNILS = '92703662611';
+const ORG_INN = '2311128737';
 
 const emailInput = (page) => page.locator('form input[type="text"], form input:not([type])').nth(1);
 const indicator = (page) => page.locator('.steps-indicator');
@@ -25,7 +27,9 @@ async function reachPaymentStep(page) {
     await page.goto('/');
     await expect(page.locator('.wizard')).toBeVisible();
 
-    await page.getByPlaceholder('+7(___)___-__-__').pressSequentially(PHONE);
+    // fill, а не посимвольный ввод: маска vue-the-mask переформатирует поле
+    // на каждый символ, и при быстрой печати цифры иногда переставляются.
+    await page.getByPlaceholder('+7(___)___-__-__').fill(PHONE);
     await page.locator('#privacy-policy').check();
     await emailInput(page).fill(EMAIL);
     await page.getByRole('heading', {name: 'Контактная информация'}).click();
@@ -38,7 +42,8 @@ async function reachBankStep(page) {
     await reachPaymentStep(page);
 
     await page.locator('label[for="radio-1"]').click();
-    await page.getByPlaceholder('Введите название в свободной форме, адрес, ИНН или ОГРН').pressSequentially('2311128737');
+    // Подсказки DaData реагируют только на реальный ввод с клавиатуры — fill не подходит.
+    await page.getByPlaceholder('Введите название в свободной форме, адрес, ИНН или ОГРН').pressSequentially(ORG_INN);
     await page.locator('.dadata-suggestions-item').click();
     await page.locator('#listeners-consent-legal').check();
     await page.getByRole('button', {name: 'Далее'}).click();
@@ -87,7 +92,7 @@ test.describe('индикатор шагов', () => {
         // форма), поэтому шкала пересчитается после перехода.
         await page.locator('label[for="radio-3"]').click();
         // СНИЛС из мока: подтягивает слушателя из «1С» и заполняет почти всё.
-        await page.getByPlaceholder('СНИЛС').pressSequentially('92703662611');
+        await page.getByPlaceholder('СНИЛС').fill(SNILS);
         await expect(page.getByPlaceholder('Фамилия')).toHaveValue('Иванов');
         // Почтовый адрес из 1С не приходит — заполняем вручную.
         await page.getByPlaceholder('Почтовый адрес').fill('г Москва, ул Тестовая, д 1');
@@ -97,6 +102,31 @@ test.describe('индикатор шагов', () => {
         await expect(indicatorItem(page, 'Банк')).toHaveCount(0);
         await expect(indicator(page).locator('.steps-indicator__list li')).toHaveCount(4);
         await expect(indicatorItem(page, 'Программы')).toHaveCount(1);
+    });
+
+    test('смена типа плательщика на физлицо не открывает недостигнутые шаги', async ({page}) => {
+        // Сценарий из ревью: юрлицо дошло до «Банка», вернулось на
+        // «Плательщик», переключилось на физлицо. Список шагов сжался, и
+        // «Программы» не должны стать кликабельными — человек их не проходил,
+        // иначе клик прыгал бы вперёд в обход валидации физлица.
+        await reachBankStep(page);
+
+        await page.getByRole('button', {name: 'Назад'}).click();
+        await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+        await page.locator('label[for="radio-3"]').click();
+
+        // Физлицо невалидно — «Далее» не пускает, но тип в стор уже записан,
+        // шкала пересчитана на 4 шага.
+        await page.getByRole('button', {name: 'Далее'}).click();
+        await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+
+        await expandIndicatorIfCollapsed(page);
+        await expect(indicatorItem(page, 'Банк')).toHaveCount(0);
+        await expect(indicatorItem(page, 'Программы')).toBeDisabled();
+
+        // И клик по «Программам» никуда не ведёт.
+        await indicatorItem(page, 'Программы').click({force: true});
+        await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
     });
 
     test('на мобильном индикатор свёрнут в одну строку и раскрывается по тапу', async ({page, isMobile}) => {

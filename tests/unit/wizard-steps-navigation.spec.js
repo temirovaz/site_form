@@ -1,5 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {shallowMount} from '@vue/test-utils';
+import Vue from 'vue';
 
 // Шаги визарда тяжёлые (vee-validate, dadata, store) — подменяем их на
 // пустышки, тестируем только логику переходов по индикатору шагов.
@@ -155,5 +156,52 @@ describe('wizard.vue — переходы по индикатору шагов',
 
         expect(wrapper.vm.steps.map((step) => step.title))
             .toEqual(['Контакты', 'Плательщик', 'Программы', 'Отправка']);
+    });
+
+    it('смена типа плательщика обрезает maxReachedStep: старый индекс не открывает обход валидации', async () => {
+        // Сценарий из ревью PR #22: юрлицо дошло до «Банка», вернулось на
+        // «Плательщик» и переключилось на физлицо. Список шагов сжался
+        // («Банк» выпал), и старый maxReachedStep=2 стал указывать на
+        // «Программы», которые человек не проходил, — клик по шкале прыгал
+        // бы вперёд в обход валидации физлица. Стор реактивный, как в бою;
+        // type объявлен заранее: в Vue 2 новые свойства не реактивны.
+        const store = Vue.observable({state: {form: {payment: {type: null}, contact: {}}}});
+        const wrapper = shallowMount(Wizard, {mocks: {$store: store}});
+
+        await proceed(wrapper); // «Плательщик»
+        await proceed(wrapper); // «Банк», maxReachedStep = 2
+        unlock(wrapper);
+        wrapper.vm.backClicked(); // назад на «Плательщик»
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.currentStep).toBe(1);
+        expect(wrapper.vm.maxReachedStep).toBe(2);
+
+        // physical-form коммитит тип в стор даже при невалидной форме
+        store.state.form.payment.type = 'physical';
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.vm.steps).toHaveLength(4);
+        expect(wrapper.vm.maxReachedStep).toBe(1);
+
+        // «Программы» (новый индекс 2) недоступны: клик не срабатывает.
+        unlock(wrapper);
+        wrapper.vm.goToStep(2);
+        expect(wrapper.vm.currentStep).toBe(1);
+    });
+
+    it('обратная смена физлицо → юрлицо тоже не открывает недостигнутые шаги', async () => {
+        const store = Vue.observable({state: {form: {payment: {type: 'physical'}, contact: {}}}});
+        const wrapper = shallowMount(Wizard, {mocks: {$store: store}});
+
+        await proceed(wrapper); // «Плательщик»
+        await proceed(wrapper); // «Программы» (у физлица нет «Банка»), maxReached = 2
+
+        store.state.form.payment.type = 'legal';
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.vm.steps).toHaveLength(5);
+        // Текущий шаг — индекс 2, но теперь это «Банк»: состав изменился,
+        // достигнутость обрезана до текущего.
+        expect(wrapper.vm.maxReachedStep).toBeLessThanOrEqual(wrapper.vm.currentStep);
     });
 });

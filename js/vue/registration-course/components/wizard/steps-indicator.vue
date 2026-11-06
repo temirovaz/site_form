@@ -1,10 +1,10 @@
 <template>
-  <div class="steps-indicator" :class="{ 'steps-indicator--expanded': expanded }">
+  <div class="steps-indicator" :class="{ 'steps-indicator--expanded': expanded, 'steps-indicator--disabled': disabled }">
     <!-- Свёрнутый вид: текущий шаг и тонкая шкала прогресса. На десктопе
          скрыт — там сразу виден весь список шагов. -->
-    <button type="button" class="steps-indicator__current" :aria-expanded="expanded" @click="expanded = !expanded">
+    <button type="button" class="steps-indicator__current" :aria-expanded="expanded" :disabled="disabled" @click="expanded = !expanded">
       <span class="steps-indicator__counter">Шаг {{ current + 1 }} из {{ steps.length }}</span>
-      <span class="steps-indicator__current-title">{{ steps[current].title }}</span>
+      <span class="steps-indicator__current-title">{{ currentTitle }}</span>
       <span class="steps-indicator__chevron" :class="{ 'steps-indicator__chevron--up': expanded }"></span>
     </button>
     <div class="steps-indicator__progress">
@@ -16,7 +16,7 @@
         <button
             type="button"
             class="steps-indicator__item"
-            :disabled="!isReachable(index)"
+            :disabled="disabled || !isReachable(index)"
             :aria-current="index === current ? 'step' : null"
             @click="goTo(index)">
           <span class="steps-indicator__number">{{ index + 1 }}</span>
@@ -40,12 +40,19 @@ export default {
     // Самый далёкий шаг, до которого человек доходил: дальше него клики
     // по шкале не ведут.
     maxReached: {type: Number, required: true},
+    // Пока идёт отправка заявки, шкала визуально притушена и не кликабельна —
+    // как кнопка «Назад» в футере визарда.
+    disabled: {type: Boolean, default: false},
   },
   data() {
     return {expanded: false};
   },
   computed: {
+    currentTitle() {
+      return this.steps[this.current]?.title || '';
+    },
     progressWidth() {
+      if (!this.steps.length) return '0%';
       return `${((this.current + 1) / this.steps.length) * 100}%`;
     },
   },
@@ -63,6 +70,7 @@ export default {
       };
     },
     goTo(index) {
+      if (this.disabled) return;
       if (!this.isReachable(index) || index === this.current) return;
       this.expanded = false;
       this.$emit('go-to', index);
@@ -191,6 +199,10 @@ export default {
 .steps-indicator__step--unreachable .steps-indicator__number {
   border-color: #ddd;
   color: #bbb;
+}
+/* Во время отправки заявки вся шкала притушена */
+.steps-indicator--disabled {
+  opacity: 0.6;
 }
 
 @media (max-width: 768px) {

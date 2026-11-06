@@ -97,4 +97,24 @@ describe('steps-indicator.vue', () => {
         expect(wrapper.vm.isReachable(0)).toBe(true);
         expect(wrapper.vm.isReachable(1)).toBe(false);
     });
+
+    it('disabled притушает шкалу и блокирует клики (на время отправки заявки)', async () => {
+        const wrapper = mountIndicator({disabled: true});
+
+        expect(wrapper.classes()).toContain('steps-indicator--disabled');
+        expect(items(wrapper).at(0).attributes('disabled')).toBeDefined();
+        expect(items(wrapper).at(3).attributes('disabled')).toBeDefined();
+
+        await items(wrapper).at(0).trigger('click');
+        expect(wrapper.emitted('go-to')).toBeUndefined();
+    });
+
+    it('переживает пустой список шагов без падения', () => {
+        const wrapper = mountIndicator({steps: [], current: 0, maxReached: 0});
+
+        expect(wrapper.vm.currentTitle).toBe('');
+        expect(wrapper.find('.steps-indicator__progress-bar').attributes('style'))
+            .toContain('width: 0%');
+        expect(wrapper.text()).toContain('Шаг 1 из 0');
+    });
 });

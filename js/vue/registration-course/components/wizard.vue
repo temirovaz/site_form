@@ -1,6 +1,6 @@
 <template>
   <div class="wizard">
-    <steps-indicator v-if="!isFinish" :steps="steps" :current="currentStep" :max-reached="maxReachedStep" @go-to="goToStep"></steps-indicator>
+    <steps-indicator v-if="!isFinish" :steps="steps" :current="currentStep" :max-reached="maxReachedStep" :disabled="submitInProgress" @go-to="goToStep"></steps-indicator>
     <div ref="wizard-body" class="wizard__body" >
       <div  class="wizard__body__step" v-if="!isFinish" :style="navigationLocked ? {pointerEvents: 'none', opacity: 0.6} : null">
         <keep-alive>
@@ -105,6 +105,18 @@ export default {
       // «доставал» до дальних шагов, и возвращаться к ним по клику можно.
       if(value > this.maxReachedStep){
         this.maxReachedStep = value;
+      }
+    },
+    steps(newSteps, oldSteps) {
+      // Смена типа плательщика меняет состав шагов (у физлица нет «Банка»),
+      // и индексы после «Плательщика» съезжают. maxReachedStep привязан к
+      // индексу, поэтому при смене состава обрезаем его до текущего шага:
+      // иначе старый индекс указывал бы на шаг, который человек не проходил,
+      // и клик по шкале прыгал бы вперёд в обход валидации (важно из ревью).
+      // Данные самих шагов при этом не теряются — до них доходят заново
+      // через «Далее».
+      if(newSteps.length !== oldSteps.length){
+        this.maxReachedStep = Math.min(this.maxReachedStep, this.currentStep);
       }
     },
   },
