@@ -8,7 +8,7 @@
         </label>
       </template>
       <template v-if="name === 'phone'">
-        <FormInput  ref="input" v-mask="'+7 (###)-###-##-##'" :placeholder="placeholderComputed" :value="value" v-model="localValue"></FormInput>
+        <FormInput  ref="input" v-mask="'+7 (###)-###-##-##'" :placeholder="placeholderComputed" :value="value" v-model="localValue" @paste="onPhonePaste"></FormInput>
       </template>
       <template v-else-if="tag === 'textarea'">
         <FromTextarea ref="input" :placeholder="placeholderComputed"  :value="value" :disabled="disabled" v-model="localValue"></FromTextarea>
@@ -25,6 +25,7 @@
   import FormInput from "./form/form-input";
   import FromTextarea from "./form/form-textaria";
   import {mask} from 'vue-the-mask'
+  import {formatPastedPhone} from "../service/PhoneService";
 
 
   export default {
@@ -54,6 +55,19 @@
            this.localValue = value;
         }
       }
+    },
+    methods: {
+      // Вставка из буфера: люди копируют телефон с пробелами, скобками,
+      // восьмёркой и текстом вокруг. Маска такой ввод не чистит — перехватываем
+      // вставку, нормализуем и раскладываем по маске сами. Если в буфере явно
+      // не телефон, отдаём вставку маске как раньше.
+      onPhonePaste(event) {
+        const text = event.clipboardData?.getData('text') || '';
+        const formatted = formatPastedPhone(text);
+        if (formatted === null) return;
+        event.preventDefault();
+        this.localValue = formatted;
+      },
     },
     created() {
       if (this.value) {

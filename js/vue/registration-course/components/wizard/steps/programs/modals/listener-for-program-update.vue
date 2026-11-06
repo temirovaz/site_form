@@ -67,7 +67,7 @@ export default {
       filledFrom1C: {},
       mappingForm: [
         [
-          {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6' },
+          {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6', rules: 'phone' },
           {name: 'email', label: 'Электронная почта', rules: 'email', class: 'col-md-6' },
         ],
         [
