@@ -1,5 +1,6 @@
 <template>
   <div class="wizard">
+    <steps-indicator v-if="!isFinish" :steps="steps" :current="currentStep" :max-reached="maxReachedStep" @go-to="goToStep"></steps-indicator>
     <div ref="wizard-body" class="wizard__body" >
       <div  class="wizard__body__step" v-if="!isFinish" :style="navigationLocked ? {pointerEvents: 'none', opacity: 0.6} : null">
         <keep-alive>
@@ -28,17 +29,22 @@ import stepPayment from './wizard/steps/payment-form';
 import stepPrograms from './wizard/steps/programs';
 import stepBank from './wizard/steps/bank';
 import stemSummary from './wizard/steps/summary';
+import stepsIndicator from './wizard/steps-indicator';
 import  {sendNotifyError} from '../plugins/toast';
 import ApiLikeyService from "../service/api/ApiLikeyService";
 
 export default {
   name: 'Wizard',
+  components: {stepsIndicator},
 
   data () {
     return {
       nextButton: false,
       clickedFinish: false,
       currentStep: 0,
+      // Самый далёкий шаг, до которого человек доходил: индикатор шагов
+      // кликабелен только в пределах него (назад), вперёд — через «Далее».
+      maxReachedStep: 0,
       isFinish: false,
       navigationLocked: false,
       pendingAction: null,
@@ -49,11 +55,11 @@ export default {
   computed: {
     steps(){
       const steps = [
-        {component: stepContacts},
-        {component: stepPayment},
-        {component: stepBank},
-        {component: stepPrograms},
-        {component: stemSummary},
+        {component: stepContacts, title: 'Контакты'},
+        {component: stepPayment, title: 'Плательщик'},
+        {component: stepBank, title: 'Банк'},
+        {component: stepPrograms, title: 'Программы'},
+        {component: stemSummary, title: 'Отправка'},
       ];
 
       if(this.$store?.state?.form?.payment?.type === 'physical') {
@@ -93,7 +99,29 @@ export default {
     clearTimeout(this._navigationLockTimer);
   },
 
+  watch: {
+    currentStep(value) {
+      // maxReachedStep растёт только вперёд: при шаге назад человек уже
+      // «доставал» до дальних шагов, и возвращаться к ним по клику можно.
+      if(value > this.maxReachedStep){
+        this.maxReachedStep = value;
+      }
+    },
+  },
+
   methods: {
+    // Переход по клику на индикаторе шагов. Работает как «Назад» на несколько
+    // шагов сразу: только в пределах уже пройденных, иначе пропустили бы
+    // валидацию (валидация живёт в обработчике «Далее» каждого шага).
+    goToStep(index){
+      if(this.submitInProgress) return;
+      if(index > this.maxReachedStep || index === this.currentStep) return;
+      if(index < 0 || index >= this.steps.length) return;
+      if(this.navigationLocked){ this.pendingAction = () => this.goToStep(index); return; }
+      this.currentStep = index;
+      this.lockNavigation();
+    },
+
     // Сразу после перехода между шагами первый клик по любому интерактивному
     // элементу (кнопки «Назад»/«Далее»/«Отправить», но также и обычные кнопки
     // внутри самого шага, например «Добавить программу») иногда не приводил ни

@@ -1,0 +1,126 @@
+import {expect, test} from '@playwright/test';
+
+// Индикатор шагов: показывает, где человек находится, кликабелен по
+// достигнутым шагам в обе стороны, на мобильном сворачивается в одну строку.
+//
+// Данные синтетические (см. likey-pdn): example.com и несуществующий номер.
+
+const PHONE = '9991234567';
+const PHONE_IN_FORM = '+7 (999)-123-45-67';
+const EMAIL = 'ivanov@example.com';
+
+const emailInput = (page) => page.locator('form input[type="text"], form input:not([type])').nth(1);
+const indicator = (page) => page.locator('.steps-indicator');
+const indicatorItem = (page, title) =>
+    indicator(page).locator('.steps-indicator__list li', {hasText: title}).locator('button');
+
+// На мобильном список шагов свёрнут — раскрываем плашку перед кликом.
+const expandIndicatorIfCollapsed = async (page) => {
+    const collapsed = indicator(page).locator('.steps-indicator__current');
+    if (await collapsed.isVisible()) await collapsed.tap();
+};
+
+// Шаг 1: контакты → шаг 2: плательщик (юрлицо через подсказку DaData).
+async function reachPaymentStep(page) {
+    await page.goto('/');
+    await expect(page.locator('.wizard')).toBeVisible();
+
+    await page.getByPlaceholder('+7(___)___-__-__').pressSequentially(PHONE);
+    await page.locator('#privacy-policy').check();
+    await emailInput(page).fill(EMAIL);
+    await page.getByRole('heading', {name: 'Контактная информация'}).click();
+    await page.getByRole('button', {name: 'Далее'}).click();
+    await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+}
+
+// Шаг 3: банк (мок подсказок пуст — заполняем вручную).
+async function reachBankStep(page) {
+    await reachPaymentStep(page);
+
+    await page.locator('label[for="radio-1"]').click();
+    await page.getByPlaceholder('Введите название в свободной форме, адрес, ИНН или ОГРН').pressSequentially('2311128737');
+    await page.locator('.dadata-suggestions-item').click();
+    await page.locator('#listeners-consent-legal').check();
+    await page.getByRole('button', {name: 'Далее'}).click();
+    await expect(page.getByRole('heading', {name: 'Банковские реквизиты'})).toBeVisible();
+}
+
+test.describe('индикатор шагов', () => {
+    test('показывается на всех шагах, недостигнутые шаги задизейблены', async ({page}) => {
+        await page.goto('/');
+        await expect(page.locator('.wizard')).toBeVisible();
+
+        await expect(indicator(page)).toBeVisible();
+        await expect(indicatorItem(page, 'Контакты')).toBeEnabled();
+        await expect(indicatorItem(page, 'Плательщик')).toBeDisabled();
+        await expect(indicatorItem(page, 'Отправка')).toBeDisabled();
+
+        await reachPaymentStep(page);
+
+        await expect(indicator(page)).toBeVisible();
+        await expect(indicatorItem(page, 'Контакты')).toBeEnabled();
+        await expect(indicatorItem(page, 'Банк')).toBeDisabled();
+    });
+
+    test('клик по достигнутому шагу возвращает без потери введённых данных', async ({page}) => {
+        await reachBankStep(page);
+        await page.getByPlaceholder('БИК').fill('044525225');
+
+        // Назад на «Контакты» кликом по индикатору.
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Контакты').click();
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+        await expect(page.getByPlaceholder('+7(___)___-__-__')).toHaveValue(PHONE_IN_FORM);
+
+        // И вперёд по уже достигнутому «Банк» — он заполнен и кликабелен.
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Банк').click();
+        await expect(page.getByRole('heading', {name: 'Банковские реквизиты'})).toBeVisible();
+        await expect(page.getByPlaceholder('БИК')).toHaveValue('044525225');
+    });
+
+    test('для физлица шаг «Банк» исчезает из шкалы', async ({page}) => {
+        await reachPaymentStep(page);
+
+        // radio-3 — «Физическое лицо»: input скрыт стилизацией, кликаем label.
+        // Тип плательщика попадает в стор только на «Далее» (сохраняет дочерняя
+        // форма), поэтому шкала пересчитается после перехода.
+        await page.locator('label[for="radio-3"]').click();
+        // СНИЛС из мока: подтягивает слушателя из «1С» и заполняет почти всё.
+        await page.getByPlaceholder('СНИЛС').pressSequentially('92703662611');
+        await expect(page.getByPlaceholder('Фамилия')).toHaveValue('Иванов');
+        // Почтовый адрес из 1С не приходит — заполняем вручную.
+        await page.getByPlaceholder('Почтовый адрес').fill('г Москва, ул Тестовая, д 1');
+        await page.getByRole('button', {name: 'Далее'}).click();
+
+        await expect(page.getByRole('heading', {name: /добавьте программы обучения/})).toBeVisible();
+        await expect(indicatorItem(page, 'Банк')).toHaveCount(0);
+        await expect(indicator(page).locator('.steps-indicator__list li')).toHaveCount(4);
+        await expect(indicatorItem(page, 'Программы')).toHaveCount(1);
+    });
+
+    test('на мобильном индикатор свёрнут в одну строку и раскрывается по тапу', async ({page, isMobile}) => {
+        test.skip(!isMobile, 'только для мобильного проекта');
+
+        await page.goto('/');
+        await expect(page.locator('.wizard')).toBeVisible();
+
+        const collapsed = indicator(page).locator('.steps-indicator__current');
+        await expect(collapsed).toBeVisible();
+        await expect(collapsed).toContainText('Шаг 1 из 5');
+        await expect(indicator(page).locator('.steps-indicator__list')).toBeHidden();
+
+        await collapsed.tap();
+        await expect(indicator(page).locator('.steps-indicator__list')).toBeVisible();
+    });
+
+    test('на десктопе список шагов виден сразу, свёрнутой плашки нет', async ({page, isMobile}) => {
+        test.skip(isMobile, 'только для десктопного проекта');
+
+        await page.goto('/');
+        await expect(page.locator('.wizard')).toBeVisible();
+
+        await expect(indicator(page).locator('.steps-indicator__current')).toBeHidden();
+        await expect(indicator(page).locator('.steps-indicator__list')).toBeVisible();
+    });
+});
