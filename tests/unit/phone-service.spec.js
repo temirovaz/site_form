@@ -78,6 +78,13 @@ describe('formatPhone', () => {
         expect(formatPhone('')).toBe('');
         expect(formatPhone('абв')).toBe('');
     });
+
+    it('не строит номер из ввода длиннее 11 цифр', () => {
+        // Усекать молча нельзя: «8 999 123-45-67 доб. 5» иначе превратился бы
+        // в чужой номер +7 (899)-912-34-56, который проходит валидацию.
+        expect(formatPhone('899912345675')).toBe('');
+        expect(formatPhone('8999123456789991234567')).toBe('');
+    });
 });
 
 describe('formatPastedPhone — текст из буфера обмена', () => {
@@ -91,5 +98,13 @@ describe('formatPastedPhone — текст из буфера обмена', () =
         expect(formatPastedPhone('')).toBeNull();
         expect(formatPastedPhone('привет')).toBeNull();
         expect(formatPastedPhone('12345')).toBeNull();
+    });
+
+    it('возвращает null для ввода длиннее 11 цифр — это не один номер', () => {
+        // Блокер из ревью: «8 (999) 123-45-67 доб. 5» и два номера подряд
+        // нельзя молча усекать — получался бы чужой, но валидный номер.
+        expect(formatPastedPhone('8 (999) 123-45-67 доб. 5')).toBeNull();
+        expect(formatPastedPhone('89991234567 89991234567')).toBeNull();
+        expect(formatPastedPhone('899912345675')).toBeNull();
     });
 });

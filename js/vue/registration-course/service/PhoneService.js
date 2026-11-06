@@ -29,8 +29,11 @@ export function isCompletePhone(value) {
 // Раскладывает цифры по маске отображения формы:
 // 79991234567 → «+7 (999)-123-45-67». Неполный номер форматируется по мере
 // ввода — этим пользуется вставка из буфера в поле телефона.
+// Ввод длиннее 11 цифр («8 999 123-45-67 доб. 5», два номера подряд)
+// отвергается: усекать его молча нельзя — получился бы чужой номер.
 export function formatPhone(value) {
     const digits = normalizePhoneDigits(value);
+    if (digits.length > PHONE_DIGITS) return '';
     const national = digits[0] === '7' ? digits.slice(1, PHONE_DIGITS) : digits.slice(0, 10);
     if (!national) return '';
 
@@ -44,8 +47,10 @@ export function formatPhone(value) {
 // Текст из буфера обмена, пригодный для подстановки в поле телефона:
 // возвращает отформатированный номер либо null, если вставлять нечего
 // (пусто или явно не телефон) — тогда поле обрабатывает вставку как раньше.
+// Принимаем ровно 10 или 11 цифр: более длинный ввод — это не один номер
+// (добавочный, два номера подряд), и усекать его до чужого нельзя.
 export function formatPastedPhone(text) {
     const digits = normalizePhoneDigits(text);
-    if (digits.length < 10) return null;
+    if (digits.length !== 10 && digits.length !== PHONE_DIGITS) return null;
     return formatPhone(digits);
 }

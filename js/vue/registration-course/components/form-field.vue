@@ -62,7 +62,7 @@
       // вставку, нормализуем и раскладываем по маске сами. Если в буфере явно
       // не телефон, отдаём вставку маске как раньше.
       onPhonePaste(event) {
-        const text = event.clipboardData?.getData('text') || '';
+        const text = event.clipboardData?.getData('text/plain') || '';
         const formatted = formatPastedPhone(text);
         if (formatted === null) return;
         event.preventDefault();
