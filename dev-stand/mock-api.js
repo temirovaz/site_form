@@ -61,6 +61,9 @@ const mockBank = () => ({
     data: {
         bic: '044525225',
         address: {value: 'г Москва, ул Вавилова, д 19'},
+        // Без этого поля шаг банка не подтягивал кор. счёт: форма маппит его
+        // из suggestion.data.correspondent_account, как это делает живая DaData.
+        correspondent_account: '30101810400000000225',
     },
 });
 
