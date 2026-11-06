@@ -3,6 +3,14 @@
     <div class="programs-form">
       <h2>Пожалуйста, добавьте программы обучения и слушателей.</h2>
     </div>
+    <div v-if="$store.state.programsLoading" class="programs-loading">
+      Загружаем список программ…
+    </div>
+    <div v-else-if="$store.state.programsLoadError" class="programs-load-error">
+      <p>Не удалось загрузить список программ. Проверьте подключение к интернету и попробуйте ещё раз.</p>
+      <button class="btn btn-default" @click="retryLoadPrograms">Повторить</button>
+    </div>
+    <template v-else>
     <button class="btn btn-default" :class="{'-animation' : !$store.getters.getSelectedPrograms.length }" @click="$modal.show('selecting-program-for-listener')">Добавить программу</button>
     <br>
     <br>
@@ -77,6 +85,7 @@
       </div>
 
     </template>
+    </template>
 
     <selecting-program-for-listener-modal></selecting-program-for-listener-modal>
     <adding-listener-in-program-modal></adding-listener-in-program-modal>
@@ -119,6 +128,10 @@ export default {
     }
   },
   methods: {
+
+    retryLoadPrograms: function(){
+      this.$store.dispatch('loadPrograms');
+    },
 
     unSelectedProgramForUser: function(program){
       this.$store.commit('unSelectedProgramForUser', program);
@@ -168,3 +181,21 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.programs-loading {
+  padding: 16px 0;
+  color: #6c757d;
+}
+.programs-load-error {
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  background: #f8d7da;
+  color: #721c24;
+}
+.programs-load-error p {
+  margin: 0 0 12px;
+}
+</style>

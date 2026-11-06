@@ -61,6 +61,9 @@ const mockBank = () => ({
     data: {
         bic: '044525225',
         address: {value: 'г Москва, ул Вавилова, д 19'},
+        // Без этого поля шаг банка не подтягивал кор. счёт: форма маппит его
+        // из suggestion.data.correspondent_account, как это делает живая DaData.
+        correspondent_account: '30101810400000000225',
     },
 });
 
@@ -68,6 +71,11 @@ async function likeyPost(url, payload) {
     await delay(300);
 
     if (url === '/GetData/3_00' && payload?.type === 'programs') {
+        // Отладка обработки ошибки на стенде: localStorage.mock_fail_programs = '1'
+        // заставляет запрос списка программ падать, пока флаг не снять.
+        if (localStorage.getItem('mock_fail_programs') === '1') {
+            throw new Error('[mock] сбой загрузки списка программ (mock_fail_programs)');
+        }
         return {data: {status: 'success', data: mockPrograms}};
     }
 
