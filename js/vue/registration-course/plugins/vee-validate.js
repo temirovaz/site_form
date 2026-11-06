@@ -4,6 +4,7 @@ import { ValidationObserver, ValidationProvider, extend, localize, withValidatio
 import * as rules from 'vee-validate/dist/rules';
 import ru from "vee-validate/dist/locale/ru.json";
 import {checkSnilsOnlyChecksum, checkINN} from 'ru-validation-codes'
+import {isCompletePhone} from '../service/PhoneService';
 
 Object.keys(rules).forEach(rule => {
     extend(rule, rules[rule]);
@@ -24,6 +25,15 @@ extend('inn', value => {
         return true
     }
     return 'Поле "ИНН" должно быть действительным ИНН номером';
+});
+// Полнота номера: маска пропускает частично заполненный телефон
+// («+7 (925) 1__-__-__»), а в 1С такой уходит как есть. Правило необязательное —
+// пустое значение пропускает, required решается отдельно.
+extend('phone', value => {
+    if(isCompletePhone(value)){
+        return true
+    }
+    return 'Поле "{_field_}" должно содержать полный номер телефона';
 });
 
 

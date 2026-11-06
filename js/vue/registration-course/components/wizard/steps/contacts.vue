@@ -69,8 +69,10 @@ export default {
     },
     // При отказе достаточно одного контакта из двух, поэтому required снимается
     // с обоих полей, а «хотя бы один» проверяется отдельно (см. validateStep).
+    // Правило phone проверяет полноту номера и срабатывает, только если поле
+    // заполнено — пустое значение остаётся допустимым в режиме отказа.
     phoneRules(){
-      return this.declineApplication ? '' : 'required';
+      return this.declineApplication ? 'phone' : 'required|phone';
     },
     emailRules(){
       return this.declineApplication ? 'email' : 'required|email';
