@@ -66,7 +66,7 @@ export default {
       isAutoloadFrom1C: false,
       isLoading: false,
       fields: [
-        {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6', value: '+7 (123)-12-31-231', autocomplete: false, canEditValue: false, filledFrom1C: false},
+        {name: 'phone', label: 'Телефон', placeholder : "+7(___)___-__-__", class: 'col-md-6', rules: 'phone', value: '+7 (123)-12-31-231', autocomplete: false, canEditValue: false, filledFrom1C: false},
         {name: 'email', label: 'Электронная почта', rules: 'email', class: 'col-md-6', value: '123@GMAIL.СOM', autocomplete: false, canEditValue: false, filledFrom1C: false},
         {name: 'snils', label: 'СНИЛС', rules: 'required|digits:11|snils', class: 'col-md-12', value: '92703662611', autocomplete: false, canEditValue: false, filledFrom1C: false},
         {name: 'surname', label: 'Фамилия', rules: 'required', class: 'col-md-4', value: 'g', autocomplete: true, canEditValue: false, filledFrom1C: false},
