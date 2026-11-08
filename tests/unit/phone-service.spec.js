@@ -85,6 +85,13 @@ describe('formatPhone', () => {
         expect(formatPhone('899912345675')).toBe('');
         expect(formatPhone('8999123456789991234567')).toBe('');
     });
+
+    it('не строит номер из 11 цифр с чужим кодом страны', () => {
+        // Регресс: 11 цифр не с 7 («+1 999 123-45-67») раньше молча пересобирались
+        // в неверный +7 (199)-912-34-56, который проходил валидацию и уходил в 1С.
+        expect(formatPhone('19991234567')).toBe('');
+        expect(formatPhone('+1 999 123-45-67')).toBe('');
+    });
 });
 
 describe('formatPastedPhone — текст из буфера обмена', () => {
@@ -106,5 +113,12 @@ describe('formatPastedPhone — текст из буфера обмена', () =
         expect(formatPastedPhone('8 (999) 123-45-67 доб. 5')).toBeNull();
         expect(formatPastedPhone('89991234567 89991234567')).toBeNull();
         expect(formatPastedPhone('899912345675')).toBeNull();
+    });
+
+    it('возвращает null для 11 цифр с чужим кодом страны', () => {
+        // 11 цифр не с 7 — это чужой код страны: такой текст «не телефон»
+        // для формы, и маска обработает вставку как раньше.
+        expect(formatPastedPhone('19991234567')).toBeNull();
+        expect(formatPastedPhone('+1 999 123-45-67')).toBeNull();
     });
 });

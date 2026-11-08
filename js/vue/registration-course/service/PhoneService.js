@@ -34,6 +34,9 @@ export function isCompletePhone(value) {
 export function formatPhone(value) {
     const digits = normalizePhoneDigits(value);
     if (digits.length > PHONE_DIGITS) return '';
+    // 11 цифр, начинающиеся не с 7, — это чужой код страны («+1 999 123-45-67»):
+    // пересобирать его в неверный +7 нельзя, такой ввод отбрасывается.
+    if (digits.length === PHONE_DIGITS && digits[0] !== '7') return '';
     const national = digits[0] === '7' ? digits.slice(1, PHONE_DIGITS) : digits.slice(0, 10);
     if (!national) return '';
 
@@ -52,5 +55,7 @@ export function formatPhone(value) {
 export function formatPastedPhone(text) {
     const digits = normalizePhoneDigits(text);
     if (digits.length !== 10 && digits.length !== PHONE_DIGITS) return null;
+    // Чужой код страны — это «не телефон» для формы, маска обработает вставку как раньше.
+    if (digits[0] !== '7') return null;
     return formatPhone(digits);
 }
