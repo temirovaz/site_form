@@ -91,7 +91,16 @@ export default {
     },
     reportValidity(){
       this.validateFormSilently().then((formValid) => {
-        this.$emit('validity-change', {type: 'ip', valid: formValid && this.listenersConsentAccepted});
+        const valid = formValid && this.listenersConsentAccepted;
+        // Валидные реквизиты сразу в стор, а не только по «Далее»: переход
+        // вперёд кликом по шкале иначе отправлял бы устаревшие данные
+        // (блокер ревью PR #26).
+        if(valid){
+          const payload = {};
+          this.fields.forEach((field) => { payload[field.name] = field.value; });
+          this.$store?.commit?.('saveDataFormForStep', {payment: {type: 'ip', ...payload}});
+        }
+        this.$emit('validity-change', {type: 'ip', valid});
       });
     },
   },

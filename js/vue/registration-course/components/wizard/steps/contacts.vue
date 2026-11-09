@@ -118,9 +118,15 @@ export default {
     // Валидность шага для индикатора: политика принята, поля формы валидны,
     // а в режиме отказа оставлен хотя бы один способ связи (правила полей там
     // ослаблены, поэтому «хотя бы один» проверяется отдельно).
+    // Валидные данные сразу коммитим в стор, а не только по «Далее»: иначе
+    // переход вперёд кликом по шкале (минуя «Далее») оставлял бы в store —
+    // и в отправляемой заявке — устаревшие значения (блокер ревью PR #26).
     reportValidity(){
       this.validateFormSilently().then((formValid) => {
         const valid = this.privacyPolicyAccepted && formValid && (!this.declineApplication || this.hasAnyContact);
+        if(valid){
+          this.$store?.commit?.('saveDataFormForStep', {contact: {email: this.email, phone: this.phone}});
+        }
         this.reportStepValidity('wizard-step-contacts', valid);
       });
     },
