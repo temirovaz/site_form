@@ -107,16 +107,16 @@ test.describe('индикатор шагов', () => {
     test('смена типа плательщика на физлицо не открывает недостигнутые шаги', async ({page}) => {
         // Сценарий из ревью: юрлицо дошло до «Банка», вернулось на
         // «Плательщик», переключилось на физлицо. Список шагов сжался, и
-        // «Программы» не должны стать кликабельными — человек их не проходил,
-        // иначе клик прыгал бы вперёд в обход валидации физлица.
+        // «Программы» не должны стать кликабельными: форма физлица пуста,
+        // шаг «Плательщик» невалиден, а кликабельность строится от валидности
+        // цепочки — иначе клик прыгал бы вперёд в обход валидации физлица.
         await reachBankStep(page);
 
         await page.getByRole('button', {name: 'Назад'}).click();
         await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
         await page.locator('label[for="radio-3"]').click();
 
-        // Физлицо невалидно — «Далее» не пускает, но тип в стор уже записан,
-        // шкала пересчитана на 4 шага.
+        // Физлицо невалидно — «Далее» не пускает, и шкала пересчитана на 4 шага.
         await page.getByRole('button', {name: 'Далее'}).click();
         await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
 
@@ -127,6 +127,157 @@ test.describe('индикатор шагов', () => {
         // И клик по «Программам» никуда не ведёт.
         await indicatorItem(page, 'Программы').click({force: true});
         await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+    });
+
+    test('стёртые обязательные поля блокируют все следующие шаги', async ({page}) => {
+        // Прошли «Контакты» и «Плательщик», вернулись на «Контакты» и стёрли
+        // телефон: шаг перестаёт быть валидным, и всё за ним закрывается,
+        // хотя до этого было «зелёным».
+        await reachBankStep(page);
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Контакты').click();
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+
+        // Пока поля на месте — «Плательщик» и «Банк» доступны.
+        await expandIndicatorIfCollapsed(page);
+        await expect(indicatorItem(page, 'Плательщик')).toBeEnabled();
+        await expect(indicatorItem(page, 'Банк')).toBeEnabled();
+
+        await page.getByPlaceholder('+7(___)___-__-__').fill('');
+
+        // Стёрли обязательное поле — дальше по шкале не пройти.
+        await expect(indicatorItem(page, 'Плательщик')).toBeDisabled();
+        await expect(indicatorItem(page, 'Банк')).toBeDisabled();
+        await indicatorItem(page, 'Банк').click({force: true});
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+
+        // Заполнили обратно — цепочка восстановилась.
+        await page.getByPlaceholder('+7(___)___-__-__').fill(PHONE);
+        await expect(indicatorItem(page, 'Банк')).toBeEnabled();
+    });
+
+    test('после перезагрузки подсветка восстанавливается по мере повторной выдачи согласий', async ({page}) => {
+        // Черновик сохраняет данные, но не согласия (см. plugins/draft.js):
+        // после reload форма открывается с «Контактов», и шаги зеленеют заново,
+        // как только человек повторно ставит галочки — а не потому что
+        // «когда-то доходил».
+        await reachBankStep(page);
+        await page.getByPlaceholder('БИК').fill('044525225');
+
+        await page.reload();
+        await expect(page.locator('.wizard')).toBeVisible();
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+
+        // Контакты восстановлены, но политика не дана — дальше пройти нельзя.
+        await expect(page.getByPlaceholder('+7(___)___-__-__')).toHaveValue(PHONE_IN_FORM);
+        await expandIndicatorIfCollapsed(page);
+        await expect(indicatorItem(page, 'Плательщик')).toBeDisabled();
+
+        // Поставили политику — «Плательщик» открылся, переходим кликом по шкале.
+        await page.locator('#privacy-policy').check();
+        await expect(indicatorItem(page, 'Плательщик')).toBeEnabled();
+        await indicatorItem(page, 'Плательщик').click();
+        await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+
+        // Согласие слушателей тоже даётся заново — до него «Банк» закрыт.
+        await expandIndicatorIfCollapsed(page);
+        await expect(indicatorItem(page, 'Банк')).toBeDisabled();
+        await page.locator('#listeners-consent-legal').check();
+        await expect(indicatorItem(page, 'Банк')).toBeEnabled();
+
+        // «Банк» открылся и его данные на месте — восстановлены из черновика.
+        await indicatorItem(page, 'Банк').click();
+        await expect(page.getByRole('heading', {name: 'Банковские реквизиты'})).toBeVisible();
+        await expect(page.getByPlaceholder('БИК')).toHaveValue('044525225');
+    });
+
+    test('шаги заполнены только кликами по шкале — в заявку уходят актуальные данные', async ({page}) => {
+        // Блокер из ревью PR #26: переход по шкале не запускает обработчик
+        // «Далее», поэтому данные шага обязаны попадать в стор при живой
+        // валидности. Здесь вся форма заполняется без единого «Далее», а в
+        // середине меняется уже «подтверждённое» поле — payload проверяем
+        // из консольного лога мока (запрос никуда не уходит).
+        const payloads = [];
+        page.on('console', async (msg) => {
+            if (!msg.text().includes('отправка заявки в 1С')) return;
+            for (const arg of msg.args().slice(1)) {
+                try { payloads.push(await arg.jsonValue()); } catch { payloads.push(null); }
+            }
+        });
+
+        await page.goto('/');
+        await expect(page.locator('.wizard')).toBeVisible();
+
+        // «Контакты» — и сразу уходим кликом по шкале, без «Далее».
+        await page.getByPlaceholder('+7(___)___-__-__').fill(PHONE);
+        await page.locator('#privacy-policy').check();
+        await emailInput(page).fill(EMAIL);
+        await page.getByRole('heading', {name: 'Контактная информация'}).click();
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Плательщик').click();
+        await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+
+        // Юрлицо через подсказку DaData (мок: ИНН 2311128737).
+        await page.locator('label[for="radio-1"]').click();
+        await page.getByPlaceholder('Введите название в свободной форме, адрес, ИНН или ОГРН').pressSequentially(ORG_INN);
+        await page.locator('.dadata-suggestions-item').click();
+        await page.locator('#listeners-consent-legal').check();
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Банк').click();
+        await expect(page.getByRole('heading', {name: 'Банковские реквизиты'})).toBeVisible();
+
+        await page.getByPlaceholder('Наименование банка').fill('ПАО Тестбанк');
+        await page.getByPlaceholder('БИК').fill('044525225');
+        await page.getByPlaceholder('Корреспондентский счет').fill('30101810400000000225');
+        await page.getByPlaceholder('Адрес банка').fill('г Москва, ул Вавилова, д 19');
+        await page.getByPlaceholder('Расчетный счет').fill('40702810400000000001');
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Программы').click();
+        await expect(page.getByRole('heading', {name: /добавьте программы обучения/})).toBeVisible();
+
+        // Программа из мока и слушатель по СНИЛС 92703662611.
+        await page.getByRole('button', {name: 'Добавить программу'}).click();
+        await page.getByRole('textbox', {name: 'Поиск программ'}).pressSequentially('а');
+        await page.getByRole('button', {name: 'Выбрать'}).first().click();
+        await page.getByRole('dialog').getByRole('button', {name: 'Close'}).click();
+
+        await page.getByRole('button', {name: 'Добавить слушателя'}).click();
+        await page.getByRole('dialog').getByPlaceholder('+7(___)___-__-__').fill(PHONE);
+        await page.getByPlaceholder('СНИЛС').fill(SNILS);
+        await expect(page.getByPlaceholder('Фамилия')).toHaveValue('Иванов');
+        await page.getByRole('dialog').locator('input[type="text"], input:not([type])').nth(1).fill(EMAIL);
+        await page.getByRole('dialog').locator('input[type="date"]').first().fill('1990-05-15');
+        // Дропдаун подсказок почты перекрывает нижние поля — снимаем фокус.
+        await page.getByRole('dialog').locator('h4').click();
+        await page.getByRole('dialog').getByRole('button', {name: 'Добавить слушателя'}).click();
+        await expect(page.getByText('Иванов Иван Иванович')).toBeVisible();
+
+        // Меняем уже «подтверждённое» поле и уходим вперёд кликом по шкале —
+        // в заявке должна уйти новая почта, а не та, что была на «Далее».
+        const EMAIL_EDITED = 'ivanov.new@example.com';
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Контакты').click();
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+        await emailInput(page).fill(EMAIL_EDITED);
+        await page.getByRole('heading', {name: 'Контактная информация'}).click();
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Отправка').click();
+        await expect(page.locator('.summary-step')).toContainText(EMAIL_EDITED);
+
+        await page.getByRole('button', {name: 'Отправить'}).click();
+        await expect(page.getByText('Спасибо. Ваша заявка принята')).toBeVisible();
+
+        await expect.poll(() => payloads.length, {timeout: 7_000}).toBe(1);
+        const {data} = payloads[0];
+        expect(data.contact.email).toBe(EMAIL_EDITED);
+        expect(data.contact.phone).toBe(PHONE_IN_FORM);
+        expect(data.payment.inn).toBe(ORG_INN);
+        expect(data.bank.bic).toBe('044525225');
     });
 
     test('на мобильном индикатор свёрнут в одну строку и раскрывается по тапу', async ({page, isMobile}) => {

@@ -26,6 +26,7 @@ const force = process.argv.includes('--force');
 
 const files = [
     'package.json',
+    'package-lock.json',
     'vite.config.mjs',
     'vitest.config.mjs',
     'playwright.config.mjs',

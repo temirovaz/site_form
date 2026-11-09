@@ -43,6 +43,7 @@ import DaDataSuggestion from "../../dadata-suggestion";
 import SuggestionEmail from "../../../components/suggestion/suggestion-email";
 import RegistrationCourseFormService from "../../../service/RegistrationCourseFormService";
 import {draftMixin} from "../../../plugins/draft";
+import stepValidity from "../step-validity";
 
 export default {
   name: 'wizard-step-contacts',
@@ -50,7 +51,7 @@ export default {
   // Черновик: контакты и режим отказа переживают перезагрузку страницы
   // (см. plugins/draft.js). Согласие на политику (privacyPolicyAccepted) в
   // черновик НЕ попадает: после перезагрузки человек даёт его заново.
-  mixins: [draftMixin('contacts', ['phone', 'email', 'comment', 'declineApplication'])],
+  mixins: [draftMixin('contacts', ['phone', 'email', 'comment', 'declineApplication']), stepValidity],
   props: ['clickedNext', 'clickedFinish'],
   data: function () {
     return {
@@ -84,6 +85,12 @@ export default {
     }
   },
   watch: {
+    // Любое изменение полей пересчитывает валидность шага для индикатора:
+    // стёр обязательное поле — шаг сразу перестаёт быть «зелёным».
+    phone: 'reportValidity',
+    email: 'reportValidity',
+    privacyPolicyAccepted: 'reportValidity',
+    declineApplication: 'reportValidity',
     isDeclineSubmit: {
       immediate: true,
       handler(value){
@@ -108,6 +115,21 @@ export default {
     }
   },
   methods: {
+    // Валидность шага для индикатора: политика принята, поля формы валидны,
+    // а в режиме отказа оставлен хотя бы один способ связи (правила полей там
+    // ослаблены, поэтому «хотя бы один» проверяется отдельно).
+    // Валидные данные сразу коммитим в стор, а не только по «Далее»: иначе
+    // переход вперёд кликом по шкале (минуя «Далее») оставлял бы в store —
+    // и в отправляемой заявке — устаревшие значения (блокер ревью PR #26).
+    reportValidity(){
+      this.validateFormSilently().then((formValid) => {
+        const valid = this.privacyPolicyAccepted && formValid && (!this.declineApplication || this.hasAnyContact);
+        if(valid){
+          this.$store?.commit?.('saveDataFormForStep', {contact: {email: this.email, phone: this.phone}});
+        }
+        this.reportStepValidity('wizard-step-contacts', valid);
+      });
+    },
     validateStep(){
       this.showPrivacyPolicyError = false;
       this.showContactRequiredError = false;
@@ -130,6 +152,9 @@ export default {
         return true;
       });
     }
+  },
+  mounted() {
+    this.reportValidity();
   },
   // Шаг живёт под <keep-alive>, поэтому при уходе вперёд он деактивируется, а не
   // разрушается — сбрасывать флаг нужно здесь, в beforeDestroy он бы не сработал.

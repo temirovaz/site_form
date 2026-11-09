@@ -106,6 +106,7 @@ import ListenerService from '../../../service/ListenerService';
 import ListenerModel from "../../../model/ListenerModel";
 import ProgramService from "../../../service/ProgramService";
 import {sendNotifyError} from "../../../plugins/toast";
+import stepValidity from "../step-validity";
 
 
 
@@ -117,6 +118,7 @@ export default {
     addingExistListenerForProgramModal,
     listenerForProgramUpdate
   },
+  mixins: [stepValidity],
   props: ['clickedNext'],
   data: function () {
     return {
@@ -155,9 +157,22 @@ export default {
     ...mapGetters([
        'getSelectedPrograms'
     ]),
+    // Те же условия, что у «Далее» ниже: выбрана хотя бы одна программа, и у
+    // каждой выбранной есть хотя бы один слушатель. Данные живут в сторе,
+    // поэтому валидность шага для индикатора считается реактивно.
+    programsValid(){
+      const selected = this.getSelectedPrograms;
+      return selected.length > 0 && selected.every((program) => program.listeners && program.listeners.length > 0);
+    },
 
   },
   watch: {
+    programsValid: {
+      immediate: true,
+      handler(value){
+        this.reportStepValidity('wizard-step-programs', value);
+      }
+    },
     clickedNext: function(status) {
 
       let canContinue = true;

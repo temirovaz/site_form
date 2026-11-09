@@ -22,12 +22,13 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      # Корневой package.json и конфиги не лежат в git (см. dev-stand/README.md):
-      # генерируем их из dev-stand/templates/. Lockfile тоже вне git, поэтому npm install, а не npm ci.
+      # Корневой package.json, package-lock.json и конфиги не лежат в git (см.
+      # dev-stand/README.md): генерируем их из dev-stand/templates/. Установка
+      # строго по запиненному lockfile — npm ci, а не плавающий npm install.
       - name: bootstrap dev-stand
         run: node dev-stand/bootstrap.mjs
       - name: install dependencies
-        run: npm install
+        run: npm ci
       - name: unit tests (vitest)
         run: npm run test:unit
       - name: install Playwright browser
