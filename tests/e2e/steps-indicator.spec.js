@@ -107,16 +107,16 @@ test.describe('индикатор шагов', () => {
     test('смена типа плательщика на физлицо не открывает недостигнутые шаги', async ({page}) => {
         // Сценарий из ревью: юрлицо дошло до «Банка», вернулось на
         // «Плательщик», переключилось на физлицо. Список шагов сжался, и
-        // «Программы» не должны стать кликабельными — человек их не проходил,
-        // иначе клик прыгал бы вперёд в обход валидации физлица.
+        // «Программы» не должны стать кликабельными: форма физлица пуста,
+        // шаг «Плательщик» невалиден, а кликабельность строится от валидности
+        // цепочки — иначе клик прыгал бы вперёд в обход валидации физлица.
         await reachBankStep(page);
 
         await page.getByRole('button', {name: 'Назад'}).click();
         await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
         await page.locator('label[for="radio-3"]').click();
 
-        // Физлицо невалидно — «Далее» не пускает, но тип в стор уже записан,
-        // шкала пересчитана на 4 шага.
+        // Физлицо невалидно — «Далее» не пускает, и шкала пересчитана на 4 шага.
         await page.getByRole('button', {name: 'Далее'}).click();
         await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
 
@@ -127,6 +127,69 @@ test.describe('индикатор шагов', () => {
         // И клик по «Программам» никуда не ведёт.
         await indicatorItem(page, 'Программы').click({force: true});
         await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+    });
+
+    test('стёртые обязательные поля блокируют все следующие шаги', async ({page}) => {
+        // Прошли «Контакты» и «Плательщик», вернулись на «Контакты» и стёрли
+        // телефон: шаг перестаёт быть валидным, и всё за ним закрывается,
+        // хотя до этого было «зелёным».
+        await reachBankStep(page);
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Контакты').click();
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+
+        // Пока поля на месте — «Плательщик» и «Банк» доступны.
+        await expandIndicatorIfCollapsed(page);
+        await expect(indicatorItem(page, 'Плательщик')).toBeEnabled();
+        await expect(indicatorItem(page, 'Банк')).toBeEnabled();
+
+        await page.getByPlaceholder('+7(___)___-__-__').fill('');
+
+        // Стёрли обязательное поле — дальше по шкале не пройти.
+        await expect(indicatorItem(page, 'Плательщик')).toBeDisabled();
+        await expect(indicatorItem(page, 'Банк')).toBeDisabled();
+        await indicatorItem(page, 'Банк').click({force: true});
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+
+        // Заполнили обратно — цепочка восстановилась.
+        await page.getByPlaceholder('+7(___)___-__-__').fill(PHONE);
+        await expect(indicatorItem(page, 'Банк')).toBeEnabled();
+    });
+
+    test('после перезагрузки подсветка восстанавливается по мере повторной выдачи согласий', async ({page}) => {
+        // Черновик сохраняет данные, но не согласия (см. plugins/draft.js):
+        // после reload форма открывается с «Контактов», и шаги зеленеют заново,
+        // как только человек повторно ставит галочки — а не потому что
+        // «когда-то доходил».
+        await reachBankStep(page);
+        await page.getByPlaceholder('БИК').fill('044525225');
+
+        await page.reload();
+        await expect(page.locator('.wizard')).toBeVisible();
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+
+        // Контакты восстановлены, но политика не дана — дальше пройти нельзя.
+        await expect(page.getByPlaceholder('+7(___)___-__-__')).toHaveValue(PHONE_IN_FORM);
+        await expandIndicatorIfCollapsed(page);
+        await expect(indicatorItem(page, 'Плательщик')).toBeDisabled();
+
+        // Поставили политику — «Плательщик» открылся, переходим кликом по шкале.
+        await page.locator('#privacy-policy').check();
+        await expect(indicatorItem(page, 'Плательщик')).toBeEnabled();
+        await indicatorItem(page, 'Плательщик').click();
+        await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+
+        // Согласие слушателей тоже даётся заново — до него «Банк» закрыт.
+        await expandIndicatorIfCollapsed(page);
+        await expect(indicatorItem(page, 'Банк')).toBeDisabled();
+        await page.locator('#listeners-consent-legal').check();
+        await expect(indicatorItem(page, 'Банк')).toBeEnabled();
+
+        // «Банк» открылся и его данные на месте — восстановлены из черновика.
+        await indicatorItem(page, 'Банк').click();
+        await expect(page.getByRole('heading', {name: 'Банковские реквизиты'})).toBeVisible();
+        await expect(page.getByPlaceholder('БИК')).toHaveValue('044525225');
     });
 
     test('на мобильном индикатор свёрнут в одну строку и раскрывается по тапу', async ({page, isMobile}) => {

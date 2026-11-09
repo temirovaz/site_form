@@ -1,6 +1,6 @@
 <template>
   <div class="wizard">
-    <steps-indicator v-if="!isFinish" :steps="steps" :current="currentStep" :max-reached="maxReachedStep" :disabled="submitInProgress" @go-to="goToStep"></steps-indicator>
+    <steps-indicator v-if="!isFinish" :steps="steps" :current="currentStep" :validity="stepsValidity" :disabled="submitInProgress" @go-to="goToStep"></steps-indicator>
     <div ref="wizard-body" class="wizard__body" >
       <div  class="wizard__body__step" v-if="!isFinish" :style="navigationLocked ? {pointerEvents: 'none', opacity: 0.6} : null">
         <keep-alive>
@@ -43,9 +43,6 @@ export default {
       nextButton: false,
       clickedFinish: false,
       currentStep: 0,
-      // Самый далёкий шаг, до которого человек доходил: индикатор шагов
-      // кликабелен только в пределах него (назад), вперёд — через «Далее».
-      maxReachedStep: 0,
       isFinish: false,
       navigationLocked: false,
       pendingAction: null,
@@ -60,7 +57,10 @@ export default {
         {component: stepPayment, title: 'Плательщик'},
         {component: stepBank, title: 'Банк'},
         {component: stepPrograms, title: 'Программы'},
-        {component: stemSummary, title: 'Отправка'},
+        // «Отправка» — пассивный шаг обзора: заполнять в нём нечего, поэтому
+        // он всегда валиден (для цепочки доступности), но зелёным, как
+        // заполненный, не подсвечивается — см. steps-indicator.
+        {component: stemSummary, title: 'Отправка', passive: true},
       ];
 
       if(this.$store?.state?.form?.payment?.type === 'physical') {
@@ -86,6 +86,17 @@ export default {
     component(){
       return this.steps[this.currentStep].component
     },
+    // Валидность каждого шага прямо сейчас (шаги реактивно сообщают её в стор
+    // — см. wizard/step-validity.js). Индикатор красит шаги по ней, а переход
+    // по клику разрешён только до шага, перед которым вся цепочка валидна —
+    // поэтому стёртые обязательные поля сразу «сереют» шаг и блокируют
+    // все следующие. Шаг «Отправка» данных не требует — всегда валиден.
+    stepsValidity(){
+      return this.steps.map((step) => {
+        if(step.component.name === 'wizard-save-form') return true;
+        return Boolean(this.$store?.state?.stepValidity?.[step.component.name]);
+      });
+    },
     contactEmail(){
       return this.$store?.state?.form?.contact?.email || '';
     },
@@ -100,36 +111,16 @@ export default {
     clearTimeout(this._navigationLockTimer);
   },
 
-  watch: {
-    currentStep(value) {
-      // maxReachedStep растёт только вперёд: при шаге назад человек уже
-      // «доставал» до дальних шагов, и возвращаться к ним по клику можно.
-      if(value > this.maxReachedStep){
-        this.maxReachedStep = value;
-      }
-    },
-    steps(newSteps, oldSteps) {
-      // Смена типа плательщика меняет состав шагов (у физлица нет «Банка»),
-      // и индексы после «Плательщика» съезжают. maxReachedStep привязан к
-      // индексу, поэтому при смене состава обрезаем его до текущего шага:
-      // иначе старый индекс указывал бы на шаг, который человек не проходил,
-      // и клик по шкале прыгал бы вперёд в обход валидации (важно из ревью).
-      // Данные самих шагов при этом не теряются — до них доходят заново
-      // через «Далее».
-      if(newSteps.length !== oldSteps.length){
-        this.maxReachedStep = Math.min(this.maxReachedStep, this.currentStep);
-      }
-    },
-  },
-
   methods: {
-    // Переход по клику на индикаторе шагов. Работает как «Назад» на несколько
-    // шагов сразу: только в пределах уже пройденных, иначе пропустили бы
-    // валидацию (валидация живёт в обработчике «Далее» каждого шага).
+    // Переход по клику на индикаторе шагов. Кликабелен любой шаг, перед которым
+    // вся цепочка предыдущих шагов валидна прямо сейчас: валидацию это не
+    // обходит (всё перед шагом уже проверено), а испорченный ранний шаг сразу
+    // закрывает доступ ко всем последующим.
     goToStep(index){
       if(this.submitInProgress) return;
-      if(index > this.maxReachedStep || index === this.currentStep) return;
+      if(index === this.currentStep) return;
       if(index < 0 || index >= this.steps.length) return;
+      if(!this.stepsValidity.slice(0, index).every(Boolean)) return;
       if(this.navigationLocked){ this.pendingAction = () => this.goToStep(index); return; }
       this.currentStep = index;
       this.lockNavigation();

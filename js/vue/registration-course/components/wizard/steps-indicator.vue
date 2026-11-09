@@ -29,17 +29,18 @@
 
 <script>
 // Индикатор шагов визарда. Показывает, где человек находится и сколько ещё
-// заполнять. Кликабелен только «назад» по уже пройденным шагам: вперёд
-// двигаемся только через «Далее» — иначе перепрыгнули бы валидацию шага.
+// заполнять. Подсветка и кликабельность строятся на текущей валидности шагов,
+// а не на истории посещений: «зелёный» = «заполнен правильно прямо сейчас»,
+// а перейти кликом можно до любого шага, перед которым вся цепочка предыдущих
+// шагов валидна (валидацию это не обходит — всё перед ним уже проверено).
 export default {
   name: 'steps-indicator',
   props: {
     // [{ title: 'Контакты', ... }]
     steps: {type: Array, required: true},
     current: {type: Number, required: true},
-    // Самый далёкий шаг, до которого человек доходил: дальше него клики
-    // по шкале не ведут.
-    maxReached: {type: Number, required: true},
+    // Текущая валидность каждого шага (true/false), по индексам — как steps.
+    validity: {type: Array, required: true},
     // Пока идёт отправка заявки, шкала визуально притушена и не кликабельна —
     // как кнопка «Назад» в футере визарда.
     disabled: {type: Boolean, default: false},
@@ -57,15 +58,19 @@ export default {
     },
   },
   methods: {
+    // До шага можно перейти кликом, только если все шаги перед ним валидны.
     isReachable(index) {
-      return index <= this.maxReached && index < this.steps.length;
+      return index < this.steps.length && this.validity.slice(0, index).every(Boolean);
     },
     itemClass(index) {
       return {
         'steps-indicator__step--current': index === this.current,
-        // Достигнутые шаги — подсвечены и кликабельны независимо от того,
-        // до текущего они или после: человек уже их заполнил.
-        'steps-indicator__step--reached': index !== this.current && this.isReachable(index),
+        // Зелёный — валидный (заполненный) шаг, независимо от того, до текущего
+        // он или после. Стёртые обязательные поля сразу убирают подсветку.
+        // Пассивный шаг (обзор перед отправкой) заполнять не нужно — он всегда
+        // валиден для цепочки, но зелёным не красится, чтобы не выглядеть
+        // «уже пройденным» с самого начала.
+        'steps-indicator__step--reached': index !== this.current && Boolean(this.validity[index]) && !this.steps[index]?.passive,
         'steps-indicator__step--unreachable': !this.isReachable(index),
       };
     },

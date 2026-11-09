@@ -8,24 +8,26 @@ const {default: StepsIndicator} = await import(
 const STEPS = ['Контакты', 'Плательщик', 'Банк', 'Программы', 'Отправка']
     .map((title) => ({title}));
 
+// validity — текущая валидность шагов (см. wizard/step-validity.js): «зелёный»
+// = валиден сейчас, кликабельность = вся цепочка предыдущих шагов валидна.
 const mountIndicator = (props = {}) => mount(StepsIndicator, {
-    propsData: {steps: STEPS, current: 1, maxReached: 3, ...props},
+    propsData: {steps: STEPS, current: 1, validity: [true, true, false, true, true], ...props},
 });
 
 const items = (wrapper) => wrapper.findAll('.steps-indicator__item');
 
 describe('steps-indicator.vue', () => {
-    it('подсвечивает текущий шаг, достигнутые — зелёные, недостигнутые — выгоревшие', () => {
+    it('подсвечивает текущий шаг синим, валидные — зелёными', () => {
         const wrapper = mountIndicator();
         const li = wrapper.findAll('.steps-indicator__list li');
 
         expect(li.at(1).classes()).toContain('steps-indicator__step--current');
-        // Достигнутые — и до текущего, и после него
+        // Валидные (не текущие) — зелёные, где бы они ни были относительно текущего
         expect(li.at(0).classes()).toContain('steps-indicator__step--reached');
-        expect(li.at(2).classes()).toContain('steps-indicator__step--reached');
         expect(li.at(3).classes()).toContain('steps-indicator__step--reached');
-        // Недостигнутый (дальше maxReached) — выгоревший
-        expect(li.at(4).classes()).toContain('steps-indicator__step--unreachable');
+        expect(li.at(4).classes()).toContain('steps-indicator__step--reached');
+        // Невалидный — без зелёного, даже если когда-то был заполнен
+        expect(li.at(2).classes()).not.toContain('steps-indicator__step--reached');
     });
 
     it('помечает текущий шаг через aria-current', () => {
@@ -35,26 +37,40 @@ describe('steps-indicator.vue', () => {
         expect(items(wrapper).at(0).attributes('aria-current')).toBeUndefined();
     });
 
-    it('недостигнутые шаги задизейблены, достигнутые — нет', () => {
+    it('кликабельны только шаги с валидной цепочкой предыдущих', () => {
         const wrapper = mountIndicator();
 
-        expect(items(wrapper).at(4).attributes('disabled')).toBeDefined();
+        // Шаги 0, 1 и 2: цепочка до них валидна. Сам шаг 2 невалиден, но
+        // перейти на него можно — иначе его нельзя было бы исправить.
         expect(items(wrapper).at(0).attributes('disabled')).toBeUndefined();
-        expect(items(wrapper).at(3).attributes('disabled')).toBeUndefined();
+        expect(items(wrapper).at(1).attributes('disabled')).toBeUndefined();
+        expect(items(wrapper).at(2).attributes('disabled')).toBeUndefined();
+        // А вот всё за невалидным шагом 2 — недоступно.
+        expect(items(wrapper).at(3).attributes('disabled')).toBeDefined();
+        expect(items(wrapper).at(4).attributes('disabled')).toBeDefined();
     });
 
-    it('клик по достигнутому шагу эмитит go-to с его индексом', async () => {
+    it('шаг может быть зелёным (заполнен), но недоступным из-за невалидного шага перед ним', () => {
+        const wrapper = mountIndicator();
+        const li = wrapper.findAll('.steps-indicator__list li');
+
+        // Шаг 3 валиден (зелёный), но перед ним невалидный шаг 2 — переход закрыт
+        expect(li.at(3).classes()).toContain('steps-indicator__step--reached');
+        expect(li.at(3).classes()).toContain('steps-indicator__step--unreachable');
+    });
+
+    it('клик по доступному шагу эмитит go-to с его индексом', async () => {
+        const wrapper = mountIndicator();
+
+        await items(wrapper).at(0).trigger('click');
+
+        expect(wrapper.emitted('go-to')).toEqual([[0]]);
+    });
+
+    it('клики по недоступному и по текущему шагу ничего не эмитят', async () => {
         const wrapper = mountIndicator();
 
         await items(wrapper).at(3).trigger('click');
-
-        expect(wrapper.emitted('go-to')).toEqual([[3]]);
-    });
-
-    it('клики по недостигнутому и по текущему шагу ничего не эмитят', async () => {
-        const wrapper = mountIndicator();
-
-        await items(wrapper).at(4).trigger('click');
         await items(wrapper).at(1).trigger('click');
 
         expect(wrapper.emitted('go-to')).toBeUndefined();
@@ -91,8 +107,8 @@ describe('steps-indicator.vue', () => {
             .toContain('width: 80%');
     });
 
-    it('шаги дальше maxReached не считаются достигнутыми', () => {
-        const wrapper = mountIndicator({current: 0, maxReached: 0});
+    it('первый шаг доступен всегда, второй — только если валиден первый', () => {
+        const wrapper = mountIndicator({current: 0, validity: [false, false, false, false, false]});
 
         expect(wrapper.vm.isReachable(0)).toBe(true);
         expect(wrapper.vm.isReachable(1)).toBe(false);
@@ -103,14 +119,27 @@ describe('steps-indicator.vue', () => {
 
         expect(wrapper.classes()).toContain('steps-indicator--disabled');
         expect(items(wrapper).at(0).attributes('disabled')).toBeDefined();
-        expect(items(wrapper).at(3).attributes('disabled')).toBeDefined();
 
         await items(wrapper).at(0).trigger('click');
         expect(wrapper.emitted('go-to')).toBeUndefined();
     });
 
+    it('пассивный шаг (обзор перед отправкой) не красится зелёным, хоть и валиден', () => {
+        const steps = STEPS.map((step, index) =>
+            index === STEPS.length - 1 ? {...step, passive: true} : step);
+        const wrapper = mountIndicator({
+            steps, current: 1, validity: [true, true, true, true, true],
+        });
+        const li = wrapper.findAll('.steps-indicator__list li');
+
+        expect(li.at(4).classes()).not.toContain('steps-indicator__step--reached');
+        // Но на цепочку доступности пассивность не влияет — перейти можно.
+        expect(items(wrapper).at(4).attributes('disabled')).toBeUndefined();
+        expect(li.at(0).classes()).toContain('steps-indicator__step--reached');
+    });
+
     it('переживает пустой список шагов без падения', () => {
-        const wrapper = mountIndicator({steps: [], current: 0, maxReached: 0});
+        const wrapper = mountIndicator({steps: [], current: 0, validity: []});
 
         expect(wrapper.vm.currentTitle).toBe('');
         expect(wrapper.find('.steps-indicator__progress-bar').attributes('style'))
