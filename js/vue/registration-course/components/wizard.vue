@@ -32,6 +32,7 @@ import stemSummary from './wizard/steps/summary';
 import stepsIndicator from './wizard/steps-indicator';
 import  {sendNotifyError} from '../plugins/toast';
 import ApiLikeyService from "../service/api/ApiLikeyService";
+import {disableDraft} from '../plugins/draft';
 
 export default {
   name: 'Wizard',
@@ -193,6 +194,12 @@ export default {
           : ApiLikeyService.sendFormForSaveTo1C();
         send
           .then(() => {
+            // Заявка принята — черновик больше не нужен: следующая заявка должна
+            // начинаться с чистого листа, а персональные данные не должны
+            // оставаться в браузере дольше, чем нужно для заполнения. Запись
+            // отключаем, иначе коммиты при размонтировании шагов создали бы
+            // черновик заново.
+            disableDraft();
             this.isFinish = true;
           })
           .catch(() => {

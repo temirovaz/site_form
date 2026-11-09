@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Root wrapper (runs via sudo from the gate). Re-validates the branch, then runs the dev-stand
+# build as the bitrix user with a login shell (so nvm/node are set up), exactly like the manual flow.
+# 'release' removes the dev-stand lock.
+set -euo pipefail
+export LC_ALL=C
+
+readonly TEMPLATE_DIR="/home/bitrix/ext_www/dev.likey.su/local/templates/aspro-allcorp2"
+readonly BUILD_SCRIPT="$TEMPLATE_DIR/build-branch.sh"
+readonly LOCK="$TEMPLATE_DIR/.dev-stand-lock"
+
+cmd="${1:-}"
+branch="${2:-}"
+
+case "$cmd" in
+  build)
+    # dev | feature/<slug> | fix/<slug>: one slash, no '..', no shell metacharacters.
+    [[ "$branch" =~ ^(dev|feature/[A-Za-z0-9._-]+|fix/[A-Za-z0-9._-]+)$ ]] || {
+      echo "form-deploy: invalid branch '$branch'" >&2; exit 1
+    }
+    [ -x "$BUILD_SCRIPT" ] || { echo "form-deploy: $BUILD_SCRIPT missing or not executable" >&2; exit 1; }
+    exec /usr/bin/su - bitrix -c "$BUILD_SCRIPT \"$branch\""
+    ;;
+  release)
+    rm -f "$LOCK"
+    echo "released dev-stand lock"
+    ;;
+  *)
+    echo "form-deploy: only 'build <branch>' or 'release' is supported" >&2
+    exit 1
+    ;;
+esac

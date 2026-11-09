@@ -42,10 +42,15 @@
 import DaDataSuggestion from "../../dadata-suggestion";
 import SuggestionEmail from "../../../components/suggestion/suggestion-email";
 import RegistrationCourseFormService from "../../../service/RegistrationCourseFormService";
+import {draftMixin} from "../../../plugins/draft";
 
 export default {
   name: 'wizard-step-contacts',
   components: {DaDataSuggestion, SuggestionEmail},
+  // Черновик: контакты и режим отказа переживают перезагрузку страницы
+  // (см. plugins/draft.js). Согласие на политику (privacyPolicyAccepted) в
+  // черновик НЕ попадает: после перезагрузки человек даёт его заново.
+  mixins: [draftMixin('contacts', ['phone', 'email', 'comment', 'declineApplication'])],
   props: ['clickedNext', 'clickedFinish'],
   data: function () {
     return {

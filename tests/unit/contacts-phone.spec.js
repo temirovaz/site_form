@@ -1,6 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {mount} from '@vue/test-utils';
 import Vue from 'vue';
+import {clearDraft} from '../../js/vue/registration-course/plugins/draft';
 
 // Тяжёлые зависимости шага контактов подменяем: тестируем только правила
 // телефона в validateStep. SuggestionEmail — пустышка: почта здесь не
@@ -50,6 +51,10 @@ const typePhone = async (wrapper, value) => {
 describe('contacts.vue — валидация телефона', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        // Шаг контактов теперь несёт draftMixin: он восстанавливает поля из
+        // черновика при монтировании. Чтобы тесты валидации не зависели от
+        // черновика, оставленного предыдущим тестом, сбрасываем его целиком.
+        clearDraft();
     });
 
     it('не пускает дальше с частично введённым номером', async () => {

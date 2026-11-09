@@ -35,6 +35,7 @@ import IPForm from './payment-form/ip-form';
 import legalForm from './payment-form/legal-form';
 import NoteLine from '../../note-line';
 import {sendNotifyError} from '../../../plugins/toast';
+import {draftMixin} from '../../../plugins/draft';
 
 export default {
   name: 'wizard-step-payment',
@@ -44,6 +45,9 @@ export default {
     legalForm,
     NoteLine
   },
+  // Черновик: выбранный тип плательщика переживает перезагрузку (по нему
+  // восстанавливается и нужная подформа — см. watch.payment).
+  mixins: [draftMixin('paymentForm', ['payment'])],
   props: ['clickedNext'],
   data: function () {
     return {

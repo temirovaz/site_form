@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Forced command for the CI deploy key (deploy/README.md). Installed by setup.sh as
+# /usr/local/sbin/form-deploy-gate and referenced in /var/lib/form-deploy/.ssh/authorized_keys:
+#   restrict,command="/usr/local/sbin/form-deploy-gate" ssh-ed25519 AAAA… form-deploy-ci
+# Two exact forms are accepted:
+#   form-deploy build <branch>   |   form-deploy release
+# The branch charset here is a loose first pass; /usr/local/sbin/form-deploy re-validates strictly.
+set -euo pipefail
+export LC_ALL=C
+
+req="${SSH_ORIGINAL_COMMAND:-}"
+shown="${req:0:200}"
+shown="${shown//[^[:print:]]/?}"
+
+deny() {
+  /usr/bin/logger -t form-deploy-gate -- "denied: $shown" 2>/dev/null || true
+  echo "form-deploy-gate: only 'form-deploy build <branch>' or 'form-deploy release' is allowed" >&2
+  exit 1
+}
+
+if [[ "$req" =~ ^form-deploy[[:space:]]+build[[:space:]]+([A-Za-z0-9._/-]+)$ ]]; then
+  cmd=build; branch="${BASH_REMATCH[1]}"
+elif [[ "$req" == "form-deploy release" ]]; then
+  cmd=release; branch=""
+else
+  deny
+fi
+
+/usr/bin/logger -t form-deploy-gate -- "$cmd ${branch:-}" 2>/dev/null || true
+exec /usr/bin/sudo -n /usr/local/sbin/form-deploy "$cmd" "$branch"

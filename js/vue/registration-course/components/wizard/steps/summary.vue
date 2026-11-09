@@ -67,9 +67,12 @@
 import ProgramService from "../../../service/ProgramService";
 import CustomerModel from "../../../model/CustomerModel";
 import RegistrationCourseFormService from "../../../service/RegistrationCourseFormService";
+import {draftMixin} from "../../../plugins/draft";
 
 export default {
   name: "wizard-save-form",
+  // Черновик: комментарий переживает перезагрузку (см. plugins/draft.js).
+  mixins: [draftMixin('summary', ['comment'])],
   data () {
     return {
       customer: {},
