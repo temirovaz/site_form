@@ -22,6 +22,11 @@ const store = new Vuex.Store({
         // сохранённый выбор пустым состоянием ещё до того, как loadPrograms
         // успел его восстановить. Не персистится — это состояние сессии.
         programsLoaded: false,
+        // Признаки загрузки списка программ: нужны, чтобы шаг «Программы» мог
+        // показать состояние загрузки и ошибку с кнопкой «Повторить», а не
+        // пустой экран, если запрос к сайту не удался.
+        programsLoading: false,
+        programsLoadError: false,
         // Слушатели, добавленные хотя бы раз за эту сессию заполнения заявки —
         // не зависит от того, в какой программе они сейчас числятся. Нужно, чтобы
         // после удаления слушателя из всех программ его можно было выбрать снова
@@ -48,6 +53,8 @@ const store = new Vuex.Store({
                 // subscribe считает список загруженным и перезапишет секцию
                 // programSelection свежим (ещё пустым) состоянием.
                 const selection = loadDraftSection('programSelection');
+                context.commit('setProgramsLoading', true);
+                context.commit('setProgramsLoadError', false);
                 return api.likey.post('/GetData/3_00',{'type' : 'programs'},{headers : {}}).then(
                     (response) => {
                         const programs = [];
@@ -56,6 +63,7 @@ const store = new Vuex.Store({
                             programs.push(ProgramModel.fromObject(program))
                         })
                         store.commit('storePrograms', programs);
+                        store.commit('setProgramsLoading', false);
                         // Выбор программ и слушателей из черновика накатываем только
                         // после загрузки свежего списка из 1С, а не из кеша — иначе
                         // показали бы устаревшие программы.
@@ -63,7 +71,10 @@ const store = new Vuex.Store({
                             store.commit('restoreProgramSelection', selection.items);
                         }
                     }
-                );
+                ).catch(() => {
+                    store.commit('setProgramsLoadError', true);
+                    store.commit('setProgramsLoading', false);
+                });
             }
         },
     },
@@ -86,6 +97,12 @@ const store = new Vuex.Store({
                     ? {...program, selected: true, listeners: saved.listeners || []}
                     : program;
             });
+        },
+        setProgramsLoading(state, value){
+            state.programsLoading = value;
+        },
+        setProgramsLoadError(state, value){
+            state.programsLoadError = value;
         },
         setCanSubmitAsDecline(state, value){
             state.canSubmitAsDecline = value;
