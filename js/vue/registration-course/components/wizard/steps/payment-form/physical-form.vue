@@ -42,12 +42,14 @@
 import FormInput from "../../../form/form-input";
 import DaDataSuggestion from "../../../dadata-suggestion";
 import {draftMixin} from "../../../../plugins/draft";
+import stepValidity from "../../step-validity";
+
 export default {
   name: 'wizard-physical-form',
   components: {FormInput, DaDataSuggestion},
   // Черновик: паспортные данные и флаг «поля заполнены из 1С» переживают
   // перезагрузку (см. plugins/draft.js).
-  mixins: [draftMixin('payerPhysical', ['fields', 'fieldsIsDisable'])],
+  mixins: [draftMixin('payerPhysical', ['fields', 'fieldsIsDisable']), stepValidity],
   props: ['clickedNext'],
   data: function () {
     return {
@@ -119,7 +121,28 @@ export default {
       if(issuedField && suggestion.fields.passport_issued){
         issuedField.value = suggestion.fields.passport_issued;
       }
-    }
+    },
+    reportValidity(){
+      this.validateFormSilently().then((formValid) => {
+        // Валидные данные сразу в стор, а не только по «Далее»: переход
+        // вперёд кликом по шкале иначе отправлял бы устаревшие данные
+        // (блокер ревью PR #26).
+        if(formValid){
+          const payload = {};
+          this.fields.forEach((field) => { payload[field.name] = field.value; });
+          this.$store?.commit?.('saveDataFormForStep', {payment: {type: 'physical', ...payload}});
+        }
+        this.$emit('validity-change', {type: 'physical', valid: formValid});
+      });
+    },
+  },
+  mounted() {
+    this.reportValidity();
+  },
+  // При переключении типа плательщика туда-обратно подформа реактивируется без
+  // mounted — валидность нужно переслать ещё раз, иначе шаг останется без неё.
+  activated() {
+    this.reportValidity();
   },
   computed: {
     rows() {
@@ -139,6 +162,10 @@ export default {
   },
 
   watch: {
+    // Подформа живёт под keep-alive внутри шага «Плательщик» и сообщает ему
+    // свою валидность при любом изменении — тот пересчитывает валидность
+    // всего шага для индикатора.
+    fields: {deep: true, handler: 'reportValidity'},
     clickedNext:function(status) {
       if(status === true){
         this.$refs.form.validate().then(success => {

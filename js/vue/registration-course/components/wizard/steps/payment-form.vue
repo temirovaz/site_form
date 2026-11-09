@@ -20,7 +20,7 @@
 
     <template v-if="component">
       <keep-alive>
-        <component v-bind:is="component" :clickedNext="clickedNext" @can-continue="canContinue"></component>
+        <component v-bind:is="component" :clickedNext="clickedNext" @can-continue="canContinue" @validity-change="onChildValidity"></component>
       </keep-alive>
     </template>
   </div>
@@ -36,6 +36,7 @@ import legalForm from './payment-form/legal-form';
 import NoteLine from '../../note-line';
 import {sendNotifyError} from '../../../plugins/toast';
 import {draftMixin} from '../../../plugins/draft';
+import stepValidity from '../step-validity';
 
 export default {
   name: 'wizard-step-payment',
@@ -47,24 +48,47 @@ export default {
   },
   // Черновик: выбранный тип плательщика переживает перезагрузку (по нему
   // восстанавливается и нужная подформа — см. watch.payment).
-  mixins: [draftMixin('paymentForm', ['payment'])],
+  mixins: [draftMixin('paymentForm', ['payment']), stepValidity],
   props: ['clickedNext'],
   data: function () {
     return {
       payment: '',
       component: null,
-      components: { ip: IPForm, physical: physicalForm, legal: legalForm }
+      components: { ip: IPForm, physical: physicalForm, legal: legalForm },
+      // Валидность активной подформы (юрлицо/ИП/физлицо) — приходит событием
+      // validity-change от подформы при каждом изменении её полей.
+      childValid: false,
     }
   },
   methods: {
     canContinue: function(event){
       this.$emit('can-continue', {status: event.status});
     },
-
+    onChildValidity(payload){
+      // Все подформы живы под keep-alive и могут сообщать о себе; учитываем
+      // только ту, что выбрана сейчас.
+      if(payload.type !== this.payment) return;
+      this.childValid = payload.valid;
+      this.reportValidity();
+    },
+    reportValidity(){
+      this.reportStepValidity('wizard-step-payment', Boolean(this.component) && this.childValid);
+    },
   },
   watch: {
     payment: function (value) {
-      this.component = this.components[value]
+      this.component = this.components[value];
+      // Тип плательщика коммитим сразу при выборе: от него зависит состав
+      // шагов визарда (у физлица нет «Банка»), и шкала должна реагировать
+      // без ожидания «Далее». Поля подформа перезапишет, когда станет
+      // валидной (см. её reportValidity).
+      if(value){
+        this.$store?.commit?.('saveDataFormForStep', {payment: {type: value}});
+      }
+      // При смене типа валидность новой подформы ещё неизвестна — считаем шаг
+      // невалидным, пока она не отчитается (mounted/activated).
+      this.childValid = false;
+      this.reportValidity();
     },
     clickedNext: function (status) {
       // Пока не выбран тип плательщика, дочерний компонент (legal/ip/physical) ещё
@@ -76,6 +100,9 @@ export default {
         this.$emit('can-continue', {status: false});
       }
     },
+  },
+  mounted() {
+    this.reportValidity();
   },
 }
 </script>

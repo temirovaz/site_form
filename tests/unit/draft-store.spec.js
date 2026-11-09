@@ -1,17 +1,29 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 // store.js — синглтон, гидрация из черновика происходит в момент импорта,
-// поэтому каждый тест импортирует свежий модуль (vi.resetModules) на чистом
-// sessionStorage. api.js в стенде замокан (dev-stand/init.mjs, pretest:unit).
+// поэтому каждый тест импортирует свежий модуль на чистом sessionStorage.
+// api.js в стенде замокан (dev-stand/init.mjs, pretest:unit).
+//
+// На vi.resetModules() полагаться нельзя: vitest 0.34.6 эпизодически
+// возвращает прежний модуль, и тест молча работает с протухшим синглтоном
+// (флаки в CI: guard по state.programs.length в loadPrograms превращал
+// dispatch в no-op). Поэтому:
+//  - импорт store идёт с уникальным query-суффиксом — vite-node гарантированно
+//    собирает новый модуль независимо от состояния реестра;
+//  - draft.js (его store импортирует внутри себя, без суффикса) сбрасывается
+//    явно через resetDraftForTests().
 const KEY = 'site_form_draft_v1';
 
-const importStore = () => import('../../js/vue/registration-course/plugins/store');
+let storeImportCounter = 0;
+const importStore = () => import(`../../js/vue/registration-course/plugins/store?case=${++storeImportCounter}`);
 const importDraft = () => import('../../js/vue/registration-course/plugins/draft');
 
 describe('store — черновик заявки', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         sessionStorage.clear();
         vi.resetModules();
+        const {resetDraftForTests} = await importDraft();
+        resetDraftForTests();
     });
 
     it('при создании поднимает form из черновика', async () => {
@@ -122,6 +134,10 @@ describe('store — черновик заявки', () => {
         }));
 
         const {default: store} = await importStore();
+        // Индикация «протухшего» синглтона: на свежем модуле список программ
+        // ещё не загружался. Без проверки guard по programs.length в loadPrograms
+        // молча превращал бы dispatch в no-op (флаки в CI).
+        expect(store.state.programsLoaded).toBe(false);
         await store.dispatch('loadPrograms');
 
         const p1 = store.state.programs.find((p) => p.id === 'p1');

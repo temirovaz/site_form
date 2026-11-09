@@ -105,6 +105,19 @@ export function disableDraft() {
     clearDraft();
 }
 
+// Только для тестов: приводит модуль к состоянию «свежего» инстанса, как будто
+// его загрузили заново. Тесты не могут полагаться на vi.resetModules() —
+// vitest 0.34.6 эпизодически возвращает прежний модуль, и тогда кеш и флаг
+// draftEnabled утекают между тестами (см. tests/unit/draft-store.spec.js).
+// cache = null, а не {}: при следующем readCache черновик перечитается из
+// sessionStorage, как при настоящей перезагрузке страницы.
+export function resetDraftForTests() {
+    clearTimeout(writeTimer);
+    writeTimer = null;
+    cache = null;
+    draftEnabled = true;
+}
+
 if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', flushDraft);
 }

@@ -1,16 +1,20 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {mount} from '@vue/test-utils';
 
-// Модуль черновика держит кеш в замыкании, поэтому каждый тест работает со
-// «свежим» модулем (vi.resetModules), а sessionStorage чистим вручную.
+// Модуль черновика держит кеш в замыкании. На vi.resetModules() полагаться
+// нельзя (vitest 0.34.6 эпизодически возвращает прежний модуль — флаки в CI),
+// поэтому состояние модуля сбрасываем явно через resetDraftForTests(),
+// а sessionStorage чистим вручную.
 const KEY = 'site_form_draft_v1';
 
 const importDraft = () => import('../../js/vue/registration-course/plugins/draft');
 
 describe('plugins/draft.js — черновик заявки', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         sessionStorage.clear();
         vi.resetModules();
+        const {resetDraftForTests} = await importDraft();
+        resetDraftForTests();
     });
 
     it('сохраняет секцию и возвращает её после «перезагрузки» (новый инстанс модуля)', async () => {
@@ -96,9 +100,11 @@ describe('plugins/draft.js — черновик заявки', () => {
 });
 
 describe('draftMixin — восстановление полей шага', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         sessionStorage.clear();
         vi.resetModules();
+        const {resetDraftForTests} = await importDraft();
+        resetDraftForTests();
     });
 
     const buildComponent = (draftMixin, section) => ({

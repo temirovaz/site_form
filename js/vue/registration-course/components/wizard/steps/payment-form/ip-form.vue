@@ -36,13 +36,15 @@
 <script>
 import DaDataSuggestion from "../../../dadata-suggestion";
 import {draftMixin} from "../../../../plugins/draft";
+import stepValidity from "../../step-validity";
+
 export default {
   name: 'wizard-ip-form',
   components: {DaDataSuggestion},
   // Черновик: введённые реквизиты переживают перезагрузку (см. plugins/draft.js).
   // Согласие слушателей (listenersConsentAccepted) в черновик НЕ попадает:
   // после перезагрузки человек даёт его заново.
-  mixins: [draftMixin('payerIp', ['fields'])],
+  mixins: [draftMixin('payerIp', ['fields']), stepValidity],
   props: ['clickedNext'],
   data: function () {
     return {
@@ -87,6 +89,28 @@ export default {
         }
       }
     },
+    reportValidity(){
+      this.validateFormSilently().then((formValid) => {
+        const valid = formValid && this.listenersConsentAccepted;
+        // Валидные реквизиты сразу в стор, а не только по «Далее»: переход
+        // вперёд кликом по шкале иначе отправлял бы устаревшие данные
+        // (блокер ревью PR #26).
+        if(valid){
+          const payload = {};
+          this.fields.forEach((field) => { payload[field.name] = field.value; });
+          this.$store?.commit?.('saveDataFormForStep', {payment: {type: 'ip', ...payload}});
+        }
+        this.$emit('validity-change', {type: 'ip', valid});
+      });
+    },
+  },
+  mounted() {
+    this.reportValidity();
+  },
+  // При переключении типа плательщика туда-обратно подформа реактивируется без
+  // mounted — валидность нужно переслать ещё раз, иначе шаг останется без неё.
+  activated() {
+    this.reportValidity();
   },
   computed: {
     rows() {
@@ -94,6 +118,8 @@ export default {
     },
   },
   watch: {
+    fields: {deep: true, handler: 'reportValidity'},
+    listenersConsentAccepted: 'reportValidity',
     clickedNext: function(status) {
       if(status === true){
         this.showListenersConsentError = false;

@@ -26,12 +26,13 @@
 <script>
 import DaDataSuggestion from "../../dadata-suggestion";
 import {draftMixin} from "../../../plugins/draft";
+import stepValidity from "../step-validity";
 
 export default {
   name: 'wizard-step-bank',
   components: { DaDataSuggestion },
   // Черновик: банковские реквизиты переживают перезагрузку (см. plugins/draft.js).
-  mixins: [draftMixin('bank', ['fields'])],
+  mixins: [draftMixin('bank', ['fields']), stepValidity],
   props: ['clickedNext'],
   data: function () {
     return {
@@ -53,6 +54,19 @@ export default {
         return field;
       });
     },
+    reportValidity(){
+      this.validateFormSilently().then((formValid) => {
+        // Валидные реквизиты сразу в стор, а не только по «Далее»: переход
+        // вперёд кликом по шкале иначе отправлял бы устаревшие данные
+        // (блокер ревью PR #26).
+        if(formValid){
+          const payload = {};
+          this.fields.forEach((field) => { payload[field.name] = field.value; });
+          this.$store?.commit?.('saveDataFormForStep', {bank: {...payload}});
+        }
+        this.reportStepValidity('wizard-step-bank', formValid);
+      });
+    },
   },
   computed: {
     rows() {
@@ -60,6 +74,8 @@ export default {
     },
   },
   watch: {
+    // Любое изменение реквизитов пересчитывает валидность шага для индикатора.
+    fields: {deep: true, handler: 'reportValidity'},
     clickedNext: function(status) {
       if(status === true){
         this.$refs.form.validate().then(success => {
@@ -73,7 +89,10 @@ export default {
         });
       }
     }
-  }
+  },
+  mounted() {
+    this.reportValidity();
+  },
 
 }
 </script>
