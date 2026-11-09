@@ -192,6 +192,94 @@ test.describe('индикатор шагов', () => {
         await expect(page.getByPlaceholder('БИК')).toHaveValue('044525225');
     });
 
+    test('шаги заполнены только кликами по шкале — в заявку уходят актуальные данные', async ({page}) => {
+        // Блокер из ревью PR #26: переход по шкале не запускает обработчик
+        // «Далее», поэтому данные шага обязаны попадать в стор при живой
+        // валидности. Здесь вся форма заполняется без единого «Далее», а в
+        // середине меняется уже «подтверждённое» поле — payload проверяем
+        // из консольного лога мока (запрос никуда не уходит).
+        const payloads = [];
+        page.on('console', async (msg) => {
+            if (!msg.text().includes('отправка заявки в 1С')) return;
+            for (const arg of msg.args().slice(1)) {
+                try { payloads.push(await arg.jsonValue()); } catch { payloads.push(null); }
+            }
+        });
+
+        await page.goto('/');
+        await expect(page.locator('.wizard')).toBeVisible();
+
+        // «Контакты» — и сразу уходим кликом по шкале, без «Далее».
+        await page.getByPlaceholder('+7(___)___-__-__').fill(PHONE);
+        await page.locator('#privacy-policy').check();
+        await emailInput(page).fill(EMAIL);
+        await page.getByRole('heading', {name: 'Контактная информация'}).click();
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Плательщик').click();
+        await expect(page.getByRole('heading', {name: 'Плательщик'})).toBeVisible();
+
+        // Юрлицо через подсказку DaData (мок: ИНН 2311128737).
+        await page.locator('label[for="radio-1"]').click();
+        await page.getByPlaceholder('Введите название в свободной форме, адрес, ИНН или ОГРН').pressSequentially(ORG_INN);
+        await page.locator('.dadata-suggestions-item').click();
+        await page.locator('#listeners-consent-legal').check();
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Банк').click();
+        await expect(page.getByRole('heading', {name: 'Банковские реквизиты'})).toBeVisible();
+
+        await page.getByPlaceholder('Наименование банка').fill('ПАО Тестбанк');
+        await page.getByPlaceholder('БИК').fill('044525225');
+        await page.getByPlaceholder('Корреспондентский счет').fill('30101810400000000225');
+        await page.getByPlaceholder('Адрес банка').fill('г Москва, ул Вавилова, д 19');
+        await page.getByPlaceholder('Расчетный счет').fill('40702810400000000001');
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Программы').click();
+        await expect(page.getByRole('heading', {name: /добавьте программы обучения/})).toBeVisible();
+
+        // Программа из мока и слушатель по СНИЛС 92703662611.
+        await page.getByRole('button', {name: 'Добавить программу'}).click();
+        await page.getByRole('textbox', {name: 'Поиск программ'}).pressSequentially('а');
+        await page.getByRole('button', {name: 'Выбрать'}).first().click();
+        await page.getByRole('dialog').getByRole('button', {name: 'Close'}).click();
+
+        await page.getByRole('button', {name: 'Добавить слушателя'}).click();
+        await page.getByRole('dialog').getByPlaceholder('+7(___)___-__-__').fill(PHONE);
+        await page.getByPlaceholder('СНИЛС').fill(SNILS);
+        await expect(page.getByPlaceholder('Фамилия')).toHaveValue('Иванов');
+        await page.getByRole('dialog').locator('input[type="text"], input:not([type])').nth(1).fill(EMAIL);
+        await page.getByRole('dialog').locator('input[type="date"]').first().fill('1990-05-15');
+        // Дропдаун подсказок почты перекрывает нижние поля — снимаем фокус.
+        await page.getByRole('dialog').locator('h4').click();
+        await page.getByRole('dialog').getByRole('button', {name: 'Добавить слушателя'}).click();
+        await expect(page.getByText('Иванов Иван Иванович')).toBeVisible();
+
+        // Меняем уже «подтверждённое» поле и уходим вперёд кликом по шкале —
+        // в заявке должна уйти новая почта, а не та, что была на «Далее».
+        const EMAIL_EDITED = 'ivanov.new@example.com';
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Контакты').click();
+        await expect(page.getByRole('heading', {name: 'Контактная информация'})).toBeVisible();
+        await emailInput(page).fill(EMAIL_EDITED);
+        await page.getByRole('heading', {name: 'Контактная информация'}).click();
+
+        await expandIndicatorIfCollapsed(page);
+        await indicatorItem(page, 'Отправка').click();
+        await expect(page.locator('.summary-step')).toContainText(EMAIL_EDITED);
+
+        await page.getByRole('button', {name: 'Отправить'}).click();
+        await expect(page.getByText('Спасибо. Ваша заявка принята')).toBeVisible();
+
+        await expect.poll(() => payloads.length, {timeout: 7_000}).toBe(1);
+        const {data} = payloads[0];
+        expect(data.contact.email).toBe(EMAIL_EDITED);
+        expect(data.contact.phone).toBe(PHONE_IN_FORM);
+        expect(data.payment.inn).toBe(ORG_INN);
+        expect(data.bank.bic).toBe('044525225');
+    });
+
     test('на мобильном индикатор свёрнут в одну строку и раскрывается по тапу', async ({page, isMobile}) => {
         test.skip(!isMobile, 'только для мобильного проекта');
 

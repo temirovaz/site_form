@@ -78,6 +78,13 @@ export default {
   watch: {
     payment: function (value) {
       this.component = this.components[value];
+      // Тип плательщика коммитим сразу при выборе: от него зависит состав
+      // шагов визарда (у физлица нет «Банка»), и шкала должна реагировать
+      // без ожидания «Далее». Поля подформа перезапишет, когда станет
+      // валидной (см. её reportValidity).
+      if(value){
+        this.$store?.commit?.('saveDataFormForStep', {payment: {type: value}});
+      }
       // При смене типа валидность новой подформы ещё неизвестна — считаем шаг
       // невалидным, пока она не отчитается (mounted/activated).
       this.childValid = false;

@@ -124,6 +124,14 @@ export default {
     },
     reportValidity(){
       this.validateFormSilently().then((formValid) => {
+        // Валидные данные сразу в стор, а не только по «Далее»: переход
+        // вперёд кликом по шкале иначе отправлял бы устаревшие данные
+        // (блокер ревью PR #26).
+        if(formValid){
+          const payload = {};
+          this.fields.forEach((field) => { payload[field.name] = field.value; });
+          this.$store?.commit?.('saveDataFormForStep', {payment: {type: 'physical', ...payload}});
+        }
         this.$emit('validity-change', {type: 'physical', valid: formValid});
       });
     },
